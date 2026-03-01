@@ -1,0 +1,44 @@
+<aside class="cms-sidebar" [class.collapsed]="collapsed">
+  <div class="sidebar-brand">
+    <div class="brand-left">
+      <div class="brand-icon"><i class="bi bi-shield-check"></i></div>
+      <span class="brand-text" *ngIf="!collapsed">CMS Portal</span>
+    </div>
+    <button
+      type="button"
+      class="btn-collapse"
+      (click)="toggleSidebar.emit()"
+      [title]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+    >
+      <i class="bi" [ngClass]="collapsed ? 'bi-chevron-right' : 'bi-chevron-left'"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ng-container *ngFor="let item of visibleItems">
+      <a
+        class="nav-item"
+        [class.restricted]="!canAccess(item)"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+        [title]="collapsed ? item.label : ''"
+      >
+        <i class="bi" [ngClass]="'bi-' + item.icon"></i>
+        <span *ngIf="!collapsed">{{ item.label }}</span>
+        <i class="bi bi-lock-fill ms-auto lock-icon" *ngIf="!collapsed && !canAccess(item)"></i>
+      </a>
+    </ng-container>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a class="nav-item" routerLink="/profile" routerLinkActive="active" [title]="collapsed ? 'Profile' : ''">
+      <i class="bi bi-person-circle"></i>
+      <span *ngIf="!collapsed">My Profile</span>
+    </a>
+    <button class="nav-item btn-logout" (click)="auth.logout()" [title]="collapsed ? 'Logout' : ''">
+      <i class="bi bi-box-arrow-right"></i>
+      <span *ngIf="!collapsed">Logout</span>
+    </button>
+  </div>
+</aside>

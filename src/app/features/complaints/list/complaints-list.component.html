@@ -1,0 +1,73 @@
+<section>
+  <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+    <div>
+      <h2 class="page-title">All Complaints</h2>
+      <p class="page-subtitle">Track, prioritize, and resolve incoming complaints.</p>
+    </div>
+    <a class="btn btn-primary align-self-start" routerLink="/complaints/new">
+      <i class="bi bi-plus-lg me-1"></i>
+      New Complaint
+    </a>
+  </div>
+
+  <div class="surface p-3 mb-3">
+    <div class="row g-2">
+      <div class="col-md-6">
+        <input class="form-control" [(ngModel)]="search" placeholder="Search by complaint ID, client, source..." />
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="status">
+          <option value="">Status: All</option>
+          <option>New</option>
+          <option>In Progress</option>
+          <option>Resolved</option>
+          <option>Escalated</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" [(ngModel)]="priority">
+          <option value="">Priority: All</option>
+          <option>Low</option>
+          <option>Medium</option>
+          <option>High</option>
+          <option>Critical</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100" (click)="load()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Complaint ID</th>
+            <th>Client Name</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Assignee</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of complaints(); track rowId(item)) {
+            <tr>
+              <td>{{ complaintNumberOf(item) }}</td>
+              <td>{{ item.clientName }}</td>
+              <td>{{ sourceOf(item) }}</td>
+              <td><app-status-pill [text]="item.status"></app-status-pill></td>
+              <td><span class="priority-dot" [class]="'dot-' + item.priority.toLowerCase()"></span>{{ item.priority }}</td>
+              <td>{{ assigneeOf(item) }}</td>
+              <td class="text-end"><a [routerLink]="['/complaints', complaintNumberOf(item)]" class="btn btn-sm btn-outline-primary">Open</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="px-3 py-2 text-muted">Showing {{ complaints().length }} of {{ total() }} results</div>
+  </div>
+</section>

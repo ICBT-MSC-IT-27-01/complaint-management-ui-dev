@@ -1,0 +1,40 @@
+<section>
+  <h2 class="page-title">Master Dashboard</h2>
+  <p class="page-subtitle">System performance and compliance metrics for today.</p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <app-kpi-card title="Total Open" [value]="'' + metrics().totalOpen" subtitle="+4.5% vs last week" icon="bi-folder2-open"></app-kpi-card>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <app-kpi-card title="Unassigned" [value]="'' + metrics().unassigned" subtitle="Requires action" icon="bi-person-plus"></app-kpi-card>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <app-kpi-card title="High Priority" [value]="'' + metrics().highPriority" subtitle="Avg resolution: 4h" icon="bi-exclamation-triangle"></app-kpi-card>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <app-kpi-card title="Resolved Today" [value]="'' + metrics().resolvedToday" subtitle="On track" icon="bi-check2-circle"></app-kpi-card>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-xl-8">
+      <div class="card h-100">
+        <div class="card-body">
+          <h4 class="fw-bold">Complaint Volume Trends</h4>
+          <p class="text-muted">Monthly volume across all regions</p>
+          <div class="chart-placeholder"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h4 class="fw-bold">Status Distribution</h4>
+          <p class="text-muted">Active case status breakdown</p>
+          <div class="donut-placeholder"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

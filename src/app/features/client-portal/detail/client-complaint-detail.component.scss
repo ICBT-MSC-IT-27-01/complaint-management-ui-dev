@@ -1,0 +1,16 @@
+.chat-bubble {
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  max-width: 78%;
+  margin-bottom: 0.8rem;
+}
+
+.agent {
+  background: #f3f6fd;
+}
+
+.client {
+  background: var(--color-primary);
+  color: #fff;
+  margin-left: auto;
+}

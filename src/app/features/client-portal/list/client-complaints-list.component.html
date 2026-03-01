@@ -1,0 +1,23 @@
+<section>
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h2 class="page-title">My Complaints</h2>
+      <p class="page-subtitle">Track status and communicate with the compliance team.</p>
+    </div>
+    <a routerLink="/complaints/new" class="btn btn-primary">File New Complaint</a>
+  </div>
+
+  <div class="card">
+    <div class="list-group list-group-flush">
+      @for (item of complaints(); track rowId(item)) {
+        <a class="list-group-item list-group-item-action p-3" [routerLink]="['/my-complaints', complaintIdOf(item)]">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>{{ complaintNumberOf(item) }} - {{ clientNameOf(item) }}</strong>
+            <app-status-pill [text]="statusOf(item)"></app-status-pill>
+          </div>
+          <small class="text-muted">Source: {{ sourceOf(item) }} | Priority: {{ priorityOf(item) }}</small>
+        </a>
+      }
+    </div>
+  </div>
+</section>

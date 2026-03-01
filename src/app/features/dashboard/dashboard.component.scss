@@ -1,0 +1,13 @@
+.chart-placeholder {
+  height: 320px;
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f4f7ff 0%, #fdfdff 100%);
+}
+
+.donut-placeholder {
+  height: 320px;
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  background: radial-gradient(circle, #fff 20%, #f2f6ff 70%);
+}

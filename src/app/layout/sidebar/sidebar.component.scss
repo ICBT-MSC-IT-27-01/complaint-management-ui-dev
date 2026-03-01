@@ -1,0 +1,44 @@
+:host {
+  display: contents;
+}
+
+.sidebar-brand {
+  justify-content: space-between;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.btn-collapse {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.btn-collapse:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.cms-sidebar.collapsed .btn-collapse {
+  margin: 0 auto;
+}
+
+.nav-item.restricted {
+  opacity: 0.7;
+}
+
+.lock-icon {
+  font-size: 12px;
+}

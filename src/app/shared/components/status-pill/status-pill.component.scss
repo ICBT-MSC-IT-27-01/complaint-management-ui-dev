@@ -1,0 +1,33 @@
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.pill-new {
+  color: #3268e2;
+  background: #e8f0ff;
+}
+
+.pill-progress {
+  color: #9c6500;
+  background: #fff4da;
+}
+
+.pill-resolved {
+  color: #137e47;
+  background: #dff8ea;
+}
+
+.pill-escalated {
+  color: #b02a2a;
+  background: #ffe0e0;
+}
+
+.pill-default {
+  color: #596579;
+  background: #eef2f8;
+}

@@ -2,6 +2,26 @@
   max-width: 460px;
 }
 
+.role-badge {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.switcher .btn {
+  font-weight: 600;
+}
+
+.input-group .btn-toggle-pwd {
+  cursor: pointer;
+  background: #fff;
+}
+
+.form-error {
+  font-size: 0.82rem;
+  color: #b42318;
+  margin-top: 0.35rem;
+}
+
 .hero {
   background: linear-gradient(135deg, #e9eeff 0%, #f7f9ff 55%, #eef3ff 100%);
   border-left: 1px solid var(--color-border);

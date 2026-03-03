@@ -2,33 +2,150 @@
   <div class="row min-vh-100">
     <div class="col-lg-5 d-flex align-items-center justify-content-center p-4">
       <div class="surface p-4 p-md-5 login-card w-100">
-        <h1 class="mb-2">CompliMate CMS</h1>
-        <p class="text-muted mb-4">Sign in to continue to complaint operations.</p>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h1 class="mb-0">CompliMate CMS</h1>
+          <span class="badge text-bg-light border role-badge">{{ mode === 'staff' ? 'Login' : 'SignUp' }}</span>
+        </div>
+        <p class="text-muted mb-4">
+          {{ mode === 'staff' ? 'Admin, Supervisor, and Agent login.' : 'Client email-first login and registration.' }}
+        </p>
 
-        <form [formGroup]="form" (ngSubmit)="submit()" class="d-grid gap-3">
+        <div class="btn-group w-100 mb-4 switcher" role="group" aria-label="Login mode">
+          <button type="button" class="btn" [class.btn-primary]="mode === 'staff'" [class.btn-outline-primary]="mode !== 'staff'" (click)="setMode('staff')">
+            Login
+          </button>
+          <button type="button" class="btn" [class.btn-primary]="mode === 'client'" [class.btn-outline-primary]="mode !== 'client'" (click)="setMode('client')">
+            SignUp
+          </button>
+        </div>
+
+        <div class="alert alert-success py-2" *ngIf="successMsg">{{ successMsg }}</div>
+        <div class="alert alert-danger py-2" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+        <form *ngIf="mode === 'staff'" [formGroup]="staffForm" (ngSubmit)="submitStaffLogin()" class="d-grid gap-3">
           <div>
-            <label class="form-label">EmailOrUsername</label>
+            <label class="form-label">Email or Username</label>
             <input type="text" class="form-control" formControlName="emailOrUsername" />
+            <div class="form-error" *ngIf="staffForm.get('emailOrUsername')?.touched && staffForm.get('emailOrUsername')?.invalid">
+              Email or username is required.
+            </div>
           </div>
           <div>
             <label class="form-label">Password</label>
-            <input type="password" class="form-control" formControlName="password" />
+            <div class="input-group">
+              <input [type]="showPwd ? 'text' : 'password'" class="form-control" formControlName="password" />
+              <button type="button" class="input-group-text btn-toggle-pwd" (click)="showPwd = !showPwd">
+                <i class="bi" [class.bi-eye]="!showPwd" [class.bi-eye-slash]="showPwd"></i>
+              </button>
+            </div>
+            <div class="form-error" *ngIf="staffForm.get('password')?.touched && staffForm.get('password')?.invalid">
+              Password is required.
+            </div>
           </div>
-
-          @if (error) {
-            <div class="alert alert-danger py-2">{{ error }}</div>
-          }
 
           <button class="btn btn-primary" type="submit" [disabled]="loading">
             {{ loading ? 'Signing in...' : 'Sign In' }}
           </button>
+        </form>
+
+        <form *ngIf="mode === 'client' && clientStep === 'email'" [formGroup]="clientEmailForm" (ngSubmit)="submitClientEmail()" class="d-grid gap-3">
+          <div>
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" placeholder="you@example.com" autocomplete="email" />
+            <div class="form-error" *ngIf="clientEmailForm.get('email')?.touched && clientEmailForm.get('email')?.invalid">
+              Enter a valid email address.
+            </div>
+          </div>
+
+          <button class="btn btn-primary" type="submit" [disabled]="loading">
+            {{ loading ? 'Checking...' : 'Continue' }}
+          </button>
+        </form>
+
+        <form *ngIf="mode === 'client' && clientStep === 'login'" [formGroup]="clientLoginForm" (ngSubmit)="submitClientLogin()" class="d-grid gap-3">
+          <div>
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" readonly />
+          </div>
+          <div>
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <input [type]="showClientPwd ? 'text' : 'password'" class="form-control" formControlName="password" />
+              <button type="button" class="input-group-text btn-toggle-pwd" (click)="showClientPwd = !showClientPwd">
+                <i class="bi" [class.bi-eye]="!showClientPwd" [class.bi-eye-slash]="showClientPwd"></i>
+              </button>
+            </div>
+            <div class="form-error" *ngIf="clientLoginForm.get('password')?.touched && clientLoginForm.get('password')?.invalid">
+              Password is required.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary flex-fill" (click)="backToClientEmail()">Change Email</button>
+            <button class="btn btn-primary flex-fill" type="submit" [disabled]="loading">
+              {{ loading ? 'Signing in...' : 'Sign In' }}
+            </button>
+          </div>
+        </form>
+
+        <form *ngIf="mode === 'client' && clientStep === 'register'" [formGroup]="clientRegisterForm" (ngSubmit)="submitClientRegister()" class="d-grid gap-3">
+          <div>
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" readonly />
+          </div>
+
+          <div>
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" formControlName="name" />
+            <div class="form-error" *ngIf="clientRegisterForm.get('name')?.touched && clientRegisterForm.get('name')?.invalid">
+              Name is required.
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Phone Number (Optional)</label>
+            <input type="text" class="form-control" formControlName="phoneNumber" />
+          </div>
+
+          <div>
+            <label class="form-label">Password</label>
+            <div class="input-group">
+              <input [type]="showClientRegisterPwd ? 'text' : 'password'" class="form-control" formControlName="password" />
+              <button type="button" class="input-group-text btn-toggle-pwd" (click)="showClientRegisterPwd = !showClientRegisterPwd">
+                <i class="bi" [class.bi-eye]="!showClientRegisterPwd" [class.bi-eye-slash]="showClientRegisterPwd"></i>
+              </button>
+            </div>
+            <div class="form-error" *ngIf="clientRegisterForm.get('password')?.touched && clientRegisterForm.get('password')?.invalid">
+              Password must be at least 8 characters.
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Confirm Password</label>
+            <div class="input-group">
+              <input [type]="showClientConfirmPwd ? 'text' : 'password'" class="form-control" formControlName="confirmPassword" />
+              <button type="button" class="input-group-text btn-toggle-pwd" (click)="showClientConfirmPwd = !showClientConfirmPwd">
+                <i class="bi" [class.bi-eye]="!showClientConfirmPwd" [class.bi-eye-slash]="showClientConfirmPwd"></i>
+              </button>
+            </div>
+            <div class="form-error" *ngIf="clientRegisterForm.get('confirmPassword')?.touched && clientRegisterForm.get('confirmPassword')?.invalid">
+              Confirm password is required.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary flex-fill" (click)="backToClientEmail()">Change Email</button>
+            <button class="btn btn-primary flex-fill" type="submit" [disabled]="loading">
+              {{ loading ? 'Creating...' : 'Create Account' }}
+            </button>
+          </div>
         </form>
       </div>
     </div>
     <div class="col-lg-7 hero d-none d-lg-flex align-items-center justify-content-center">
       <div>
         <h2>Complaint intelligence, resolution speed, and audit-ready controls.</h2>
-        <p class="text-muted">Bootstrap + custom design system foundation for Admin, Agent, and Client portals.</p>
+        <p class="text-muted">Unified entry for workforce users and self-service clients.</p>
       </div>
     </div>
   </div>

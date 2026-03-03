@@ -5,6 +5,7 @@ import { NgIf, NgFor } from '@angular/common';
 import { ComplaintService } from '@core/services/complaint.service';
 import { ClientService } from '@core/services/client.service';
 import { CategoryService } from '@core/services/category.service';
+import { AuthService } from '@core/services/auth.service';
 import { Category } from '@core/models/category.model';
 import { Client } from '@core/models/client.model';
 
@@ -102,7 +103,7 @@ interface CategoryOption {
                   <span *ngIf="loading()" class="spinner-border spinner-border-sm me-1"></span>
                   Submit Complaint
                 </button>
-                <button type="button" class="btn btn-outline-secondary" (click)="router.navigate(['/complaints'])">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">Cancel</button>
               </div>
             </div>
           </div>
@@ -116,6 +117,7 @@ export class ComplaintFormComponent implements OnInit {
   private svc = inject(ComplaintService);
   private clientSvc = inject(ClientService);
   private catSvc = inject(CategoryService);
+  private auth = inject(AuthService);
   router = inject(Router);
 
   clients = signal<Client[]>([]);
@@ -143,6 +145,8 @@ export class ComplaintFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.prefillRequesterFields();
+
     this.clientSvc.search({ pageSize: 100 }).subscribe((r) => {
       if (r.isSuccess) this.clients.set(r.data.items);
     });
@@ -158,6 +162,10 @@ export class ComplaintFormComponent implements OnInit {
     this.f.complaintCategoryId.valueChanges.subscribe((value) => {
       this.form.patchValue({ subCategoryId: null }, { emitEvent: false });
       this.updateSubCategories(value);
+    });
+
+    this.f.clientId.valueChanges.subscribe((value) => {
+      if (!value) this.prefillRequesterFields();
     });
   }
 
@@ -184,8 +192,13 @@ export class ComplaintFormComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          if (res.isSuccess) this.router.navigate(['/complaints', res.data.ComplaintNumber]);
-          else {
+          if (res.isSuccess) {
+            if (this.auth.hasRole('Client')) {
+              this.router.navigate(['/my-complaints']);
+              return;
+            }
+            this.router.navigate(['/complaints', res.data.ComplaintNumber]);
+          } else {
             this.errorMsg = res.message;
             this.loading.set(false);
           }
@@ -195,6 +208,30 @@ export class ComplaintFormComponent implements OnInit {
           this.loading.set(false);
         }
       });
+  }
+
+  onCancel(): void {
+    if (this.auth.hasRole('Client')) {
+      this.router.navigate(['/my-complaints']);
+      return;
+    }
+    this.router.navigate(['/complaints']);
+  }
+
+  private prefillRequesterFields(): void {
+    const me = this.auth.currentUser();
+    if (!me) return;
+
+    const currentName = (this.form.value.clientName ?? '').trim();
+    const currentEmail = (this.form.value.clientEmail ?? '').trim();
+
+    this.form.patchValue(
+      {
+        clientName: currentName || me.fullName || '',
+        clientEmail: currentEmail || me.email || ''
+      },
+      { emitEvent: false }
+    );
   }
 
   clientIdOf(c: Client): number {

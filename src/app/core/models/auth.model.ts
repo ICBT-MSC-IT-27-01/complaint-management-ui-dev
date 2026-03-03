@@ -3,6 +3,26 @@ export interface LoginRequest {
   Password: string;
 }
 
+export interface CheckEmailRequest {
+  EmailOrUsername: string;
+  Password: string;
+}
+
+export interface ClientRegisterRequest {
+  Name: string;
+  Email: string;
+  PhoneNumber: string;
+  Password: string;
+  ConfirmPassword: string;
+}
+
+export interface ClientEmailCheckResponse {
+  Email: string;
+  EmailExists: boolean;
+  RequiresPassword: boolean;
+  RequiresRegistration: boolean;
+}
+
 export interface LoginResponse {
   userId: number;
   email: string;

@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Complaint } from '@core/models/complaint.model';
 import { ComplaintService } from '@core/services/complaint.service';
+import { AuthService } from '@core/services/auth.service';
 import { StatusPillComponent } from '@shared/components/status-pill/status-pill.component';
 
 @Component({
@@ -14,16 +15,35 @@ import { StatusPillComponent } from '@shared/components/status-pill/status-pill.
 })
 export class ClientComplaintsListComponent implements OnInit {
   private readonly complaintService = inject(ComplaintService);
+  private readonly auth = inject(AuthService);
 
   readonly complaints = signal<Complaint[]>([]);
 
   ngOnInit(): void {
     this.complaintService.search({ Page: 1, PageSize: 10 }).subscribe({
       next: (res) => {
-        if (res.isSuccess) this.complaints.set(res.data.items ?? []);
+        if (!res.isSuccess) return;
+
+        const me = this.auth.currentUser();
+        const myUserId = me?.userId ?? 0;
+        const myEmail = (me?.email ?? '').trim().toLowerCase();
+        const items = res.data.items ?? [];
+        const mine = items.filter((item) => this.isMine(item, myUserId, myEmail));
+        this.complaints.set(mine);
       },
       error: () => this.complaints.set([])
     });
+  }
+
+  private isMine(item: Complaint, myUserId: number, myEmail: string): boolean {
+    const c = item as Complaint & { createdBy?: number; clientEmail?: string; clientId?: number };
+    const createdBy = item.CreatedBy ?? c.createdBy ?? 0;
+    const clientId = item.ClientId ?? c.clientId ?? 0;
+    const complaintEmail = (item.ClientEmail ?? c.clientEmail ?? '').trim().toLowerCase();
+
+    if (myUserId > 0 && (createdBy === myUserId || clientId === myUserId)) return true;
+    if (myEmail && complaintEmail === myEmail) return true;
+    return false;
   }
 
   rowId(item: Complaint): number {

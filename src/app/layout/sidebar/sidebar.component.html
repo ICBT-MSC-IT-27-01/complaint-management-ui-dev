@@ -18,7 +18,6 @@
     <ng-container *ngFor="let item of visibleItems">
       <a
         class="nav-item"
-        [class.restricted]="!canAccess(item)"
         [routerLink]="item.route"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
@@ -26,7 +25,6 @@
       >
         <i class="bi" [ngClass]="'bi-' + item.icon"></i>
         <span *ngIf="!collapsed">{{ item.label }}</span>
-        <i class="bi bi-lock-fill ms-auto lock-icon" *ngIf="!collapsed && !canAccess(item)"></i>
       </a>
     </ng-container>
   </nav>

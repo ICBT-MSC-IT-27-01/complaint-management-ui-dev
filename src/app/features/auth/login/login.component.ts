@@ -3,83 +3,72 @@ import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { AuthService } from '@core/services/auth.service';
-import { LoginRequest } from '@core/models/auth.model';
+import { LoginRequest, ClientRegisterRequest } from '@core/models/auth.model';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [ReactiveFormsModule, NgIf],
-  template: `
-    <div class="login-wrapper">
-      <div class="login-card">
-        <div class="login-brand">
-          <div class="login-brand-icon"><i class="bi bi-shield-check"></i></div>
-          <h1>CMS Portal</h1>
-          <p>Complaint Management System</p>
-        </div>
-
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
-          <div class="mb-3">
-            <label class="form-label">EmailOrUsername</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" class="form-control" formControlName="emailOrUsername"
-                     placeholder="Enter EmailOrUsername" autocomplete="email">
-            </div>
-            <div class="form-error" *ngIf="form.get('emailOrUsername')?.touched && form.get('emailOrUsername')?.invalid">
-              This field is required.
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label">Password</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input [type]="showPwd ? 'text' : 'password'" class="form-control"
-                     formControlName="password" placeholder="••••••••" autocomplete="current-password">
-              <button type="button" class="input-group-text btn-toggle-pwd" (click)="showPwd = !showPwd">
-                <i class="bi" [class.bi-eye]="!showPwd" [class.bi-eye-slash]="showPwd"></i>
-              </button>
-            </div>
-            <div class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-              Password is required.
-            </div>
-          </div>
-
-          <div class="alert alert-danger py-2" *ngIf="errorMsg">
-            <i class="bi bi-exclamation-circle me-2"></i>{{ errorMsg }}
-          </div>
-
-          <button type="submit" class="btn btn-primary w-100 btn-login" [disabled]="loading">
-            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
-            {{ loading ? 'Signing in...' : 'Sign In' }}
-          </button>
-        </form>
-      </div>
-    </div>
-  `
+  templateUrl: './login.component.html',
+  styleUrl: './login.component.scss'
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  form = this.fb.group({
+  staffForm = this.fb.group({
     emailOrUsername: ['', Validators.required],
     password: ['', Validators.required]
   });
 
+  clientEmailForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]]
+  });
+
+  clientLoginForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required]
+  });
+
+  clientRegisterForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    phoneNumber: [''],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', Validators.required]
+  });
+
+  mode: 'staff' | 'client' = 'staff';
+  clientStep: 'email' | 'login' | 'register' = 'email';
   loading = false;
   showPwd = false;
+  showClientPwd = false;
+  showClientRegisterPwd = false;
+  showClientConfirmPwd = false;
   errorMsg = '';
+  successMsg = '';
 
-  onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+  setMode(mode: 'staff' | 'client'): void {
+    this.mode = mode;
+    this.errorMsg = '';
+    this.successMsg = '';
+    this.loading = false;
+
+    if (mode === 'client') {
+      this.clientStep = 'email';
+    }
+  }
+
+  submitStaffLogin(): void {
+    if (this.staffForm.invalid) { this.staffForm.markAllAsTouched(); return; }
     this.loading = true;
     this.errorMsg = '';
+    this.successMsg = '';
+
     const payload: LoginRequest = {
-      EmailOrUsername: this.form.value.emailOrUsername ?? '',
-      Password: this.form.value.password ?? ''
+      EmailOrUsername: this.staffForm.value.emailOrUsername ?? '',
+      Password: this.staffForm.value.password ?? ''
     };
 
     this.auth.login(payload).subscribe({
@@ -93,5 +82,111 @@ export class LoginComponent {
         this.errorMsg = err.error?.message || 'Invalid credentials. Please try again.';
       }
     });
+  }
+
+  submitClientEmail(): void {
+    if (this.clientEmailForm.invalid) { this.clientEmailForm.markAllAsTouched(); return; }
+
+    const email = (this.clientEmailForm.value.email ?? '').trim();
+    this.loading = true;
+    this.errorMsg = '';
+    this.successMsg = '';
+
+    this.auth.checkEmailExists(email).subscribe({
+      next: exists => {
+        this.loading = false;
+        if (exists) {
+          this.clientStep = 'login';
+          this.clientLoginForm.patchValue({ email });
+          return;
+        }
+
+        this.clientStep = 'register';
+        this.clientRegisterForm.patchValue({ email });
+      },
+      error: err => {
+        this.loading = false;
+        this.errorMsg = err.error?.message || 'Unable to verify email right now. Please try again.';
+      }
+    });
+  }
+
+  submitClientLogin(): void {
+    if (this.clientLoginForm.invalid) { this.clientLoginForm.markAllAsTouched(); return; }
+    this.loading = true;
+    this.errorMsg = '';
+    this.successMsg = '';
+
+    const payload: LoginRequest = {
+      EmailOrUsername: this.clientLoginForm.value.email ?? '',
+      Password: this.clientLoginForm.value.password ?? ''
+    };
+
+    this.auth.login(payload).subscribe({
+      next: res => {
+        this.loading = false;
+        if (res.isSuccess) this.router.navigate(['/dashboard']);
+        else this.errorMsg = res.message;
+      },
+      error: err => {
+        this.loading = false;
+        this.errorMsg = err.error?.message || 'Invalid credentials. Please try again.';
+      }
+    });
+  }
+
+  submitClientRegister(): void {
+    if (this.clientRegisterForm.invalid) { this.clientRegisterForm.markAllAsTouched(); return; }
+
+    const password = this.clientRegisterForm.value.password ?? '';
+    const confirmPassword = this.clientRegisterForm.value.confirmPassword ?? '';
+
+    if (password !== confirmPassword) {
+      this.errorMsg = 'Passwords do not match.';
+      return;
+    }
+
+    this.loading = true;
+    this.errorMsg = '';
+    this.successMsg = '';
+
+    const payload: ClientRegisterRequest = {
+      Name: this.clientRegisterForm.value.name ?? '',
+      Email: this.clientRegisterForm.value.email ?? '',
+      PhoneNumber: this.clientRegisterForm.value.phoneNumber ?? '',
+      Password: password,
+      ConfirmPassword: confirmPassword
+    };
+
+    this.auth.registerClient(payload).subscribe({
+      next: res => {
+        this.loading = false;
+        if (!res.isSuccess) {
+          this.errorMsg = res.message || 'Unable to create account.';
+          return;
+        }
+
+        if (this.auth.isAuthenticated()) {
+          this.router.navigate(['/dashboard']);
+          return;
+        }
+
+        this.clientStep = 'login';
+        this.clientLoginForm.patchValue({ email: payload.Email, password: '' });
+        this.successMsg = 'Account created successfully. Please sign in.';
+      },
+      error: err => {
+        this.loading = false;
+        this.errorMsg = err.error?.message || 'Registration failed. Please try again.';
+      }
+    });
+  }
+
+  backToClientEmail(): void {
+    this.clientStep = 'email';
+    this.errorMsg = '';
+    this.successMsg = '';
+    this.clientLoginForm.patchValue({ password: '' });
+    this.clientRegisterForm.patchValue({ password: '', confirmPassword: '' });
   }
 }

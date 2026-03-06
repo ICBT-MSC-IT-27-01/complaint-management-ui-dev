@@ -43,4 +43,8 @@ export class UserService {
   delete(id: number): Observable<ApiResponse<object>> {
     return this.http.delete<ApiResponse<object>>(`${this.base}/${id}`);
   }
+
+  exportCsv(): Observable<Blob> {
+    return this.http.get(`${this.base}/export/csv`, { responseType: 'blob' });
+  }
 }

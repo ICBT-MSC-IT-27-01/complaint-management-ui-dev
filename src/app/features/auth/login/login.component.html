@@ -42,6 +42,9 @@
               Password is required.
             </div>
           </div>
+          <div class="text-end">
+            <a routerLink="/auth/forgot-password" class="small text-decoration-none">Forgot password?</a>
+          </div>
 
           <button class="btn btn-primary" type="submit" [disabled]="loading">
             {{ loading ? 'Signing in...' : 'Sign In' }}
@@ -78,6 +81,9 @@
             <div class="form-error" *ngIf="clientLoginForm.get('password')?.touched && clientLoginForm.get('password')?.invalid">
               Password is required.
             </div>
+          </div>
+          <div class="text-end">
+            <a routerLink="/auth/forgot-password" class="small text-decoration-none">Forgot password?</a>
           </div>
 
           <div class="d-flex gap-2">

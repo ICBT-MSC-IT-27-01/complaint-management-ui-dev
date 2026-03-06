@@ -20,18 +20,18 @@ import { CreateUserRequest, UpdateUserRequest } from '@core/models/user.model';
       <div class="card-body">
         <form [formGroup]="form" (ngSubmit)="onSubmit()">
           <div class="row g-3">
-            <div class="col-12"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="Name"><div class="form-error" *ngIf="f['Name'].touched && f['Name'].invalid">Required.</div></div>
-            <div class="col-md-6"><label class="form-label fw-medium">Email <span class="text-danger">*</span></label><input type="email" class="form-control" formControlName="Email"><div class="form-error" *ngIf="f['Email'].touched && f['Email'].invalid">Valid email required.</div></div>
-            <div class="col-md-6"><label class="form-label fw-medium">Username <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="Username"><div class="form-error" *ngIf="f['Username'].touched && f['Username'].invalid">Required.</div></div>
-            <div class="col-md-6"><label class="form-label fw-medium">Phone</label><input type="text" class="form-control" formControlName="PhoneNumber"></div>
-            <div class="col-md-6"><label class="form-label fw-medium">Role <span class="text-danger">*</span></label><select class="form-select" formControlName="Role"><option>Admin</option><option>Supervisor</option><option>Agent</option><option>Client</option></select></div>
-            <div class="col-12" *ngIf="isEditMode">
+            <div class="col-12"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="name"><div class="form-error" *ngIf="f['name'].touched && f['name'].invalid">Required.</div></div>
+            <div class="col-md-6"><label class="form-label fw-medium">Email <span class="text-danger">*</span></label><input type="email" class="form-control" formControlName="email"><div class="form-error" *ngIf="f['email'].touched && f['email'].invalid">Valid email required.</div></div>
+            <div class="col-md-6"><label class="form-label fw-medium">Username <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="username"><div class="form-error" *ngIf="f['username'].touched && f['username'].invalid">Required.</div></div>
+            <div class="col-md-6"><label class="form-label fw-medium">Phone</label><input type="text" class="form-control" formControlName="phoneNumber"></div>
+            <div class="col-md-6"><label class="form-label fw-medium">Role <span class="text-danger">*</span></label><select class="form-select" formControlName="role"><option>Admin</option><option>Supervisor</option><option>Agent</option><option>Client</option></select></div>
+            <div class="col-12">
               <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="isActive" formControlName="IsActive">
+                <input class="form-check-input" type="checkbox" id="isActive" formControlName="isActive">
                 <label class="form-check-label fw-medium" for="isActive">Is Active</label>
               </div>
             </div>
-            <div class="col-12" *ngIf="!isEditMode"><label class="form-label fw-medium">Password <span class="text-danger">*</span></label><input type="password" class="form-control" formControlName="Password"><div class="form-error" *ngIf="f['Password'].touched && f['Password'].invalid">Min 8 characters.</div></div>
+            <div class="col-12" *ngIf="!isEditMode"><label class="form-label fw-medium">Password <span class="text-danger">*</span></label><input type="password" class="form-control" formControlName="password"><div class="form-error" *ngIf="f['password'].touched && f['password'].invalid">Min 8 characters.</div></div>
             <div class="col-12">
               <div class="alert alert-danger py-2" *ngIf="errorMsg">{{ errorMsg }}</div>
               <div class="d-flex gap-2">
@@ -55,13 +55,13 @@ export class UserFormComponent implements OnInit {
   loading = false;
   errorMsg = '';
   form = this.fb.group({
-    Name: ['', Validators.required],
-    Email: ['', [Validators.required, Validators.email]],
-    Username: ['', Validators.required],
-    PhoneNumber: [''],
-    Role: ['Agent', Validators.required],
-    IsActive: [true],
-    Password: ['', [Validators.required, Validators.minLength(8)]]
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    username: ['', Validators.required],
+    phoneNumber: [''],
+    role: ['Agent', Validators.required],
+    isActive: [true],
+    password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
   get f() { return this.form.controls; }
@@ -72,8 +72,8 @@ export class UserFormComponent implements OnInit {
 
     this.userId = Number(id);
     this.isEditMode = true;
-    this.f.Password.clearValidators();
-    this.f.Password.updateValueAndValidity();
+    this.f.password.clearValidators();
+    this.f.password.updateValueAndValidity();
     this.loadUser(this.userId);
   }
 
@@ -84,12 +84,12 @@ export class UserFormComponent implements OnInit {
         if (res.isSuccess) {
           const user = this.normalizeUser(res.data as unknown as Record<string, unknown>);
           this.form.patchValue({
-            Name: user.Name,
-            Email: user.Email,
-            Username: user.Username,
-            PhoneNumber: user.PhoneNumber ?? '',
-            Role: user.Role || 'Agent',
-            IsActive: user.IsActive
+            name: user.name,
+            email: user.email,
+            username: user.username,
+            phoneNumber: user.phoneNumber ?? '',
+            role: user.role || 'Agent',
+            isActive: user.isActive
           });
           this.errorMsg = '';
         } else {
@@ -105,12 +105,12 @@ export class UserFormComponent implements OnInit {
   }
 
   private normalizeUser(data: Record<string, unknown>): {
-    Name: string;
-    Email: string;
-    Username: string;
-    PhoneNumber: string;
-    Role: string;
-    IsActive: boolean;
+    name: string;
+    email: string;
+    username: string;
+    phoneNumber: string;
+    role: string;
+    isActive: boolean;
   } {
     const read = (pascal: string, camel: string): string => {
       const value = data[pascal] ?? data[camel];
@@ -122,12 +122,12 @@ export class UserFormComponent implements OnInit {
     };
 
     return {
-      Name: read('Name', 'name'),
-      Email: read('Email', 'email'),
-      Username: read('Username', 'username'),
-      PhoneNumber: read('PhoneNumber', 'phoneNumber'),
-      Role: read('Role', 'role'),
-      IsActive: readBool('IsActive', 'isActive')
+      name: read('Name', 'name'),
+      email: read('Email', 'email'),
+      username: read('Username', 'username'),
+      phoneNumber: read('PhoneNumber', 'phoneNumber'),
+      role: read('Role', 'role'),
+      isActive: readBool('IsActive', 'isActive')
     };
   }
 
@@ -137,12 +137,12 @@ export class UserFormComponent implements OnInit {
 
     if (this.isEditMode && this.userId != null) {
       const payload: UpdateUserRequest = {
-        Name: this.form.value.Name ?? '',
-        Email: this.form.value.Email ?? '',
-        Username: this.form.value.Username ?? '',
-        PhoneNumber: this.form.value.PhoneNumber ?? '',
-        Role: this.form.value.Role ?? 'Agent',
-        IsActive: this.form.value.IsActive ?? true
+        name: this.form.value.name ?? '',
+        email: this.form.value.email ?? '',
+        username: this.form.value.username ?? '',
+        phoneNumber: this.form.value.phoneNumber ?? '',
+        role: this.form.value.role ?? 'Agent',
+        isActive: this.form.value.isActive ?? true
       };
       this.svc.update(this.userId, payload).subscribe({
         next: res => { if (res.isSuccess) this.router.navigate(['/users']); else { this.errorMsg = res.message; this.loading = false; } },
@@ -152,12 +152,13 @@ export class UserFormComponent implements OnInit {
     }
 
     const payload: CreateUserRequest = {
-      Name: this.form.value.Name ?? '',
-      Email: this.form.value.Email ?? '',
-      Username: this.form.value.Username ?? '',
-      PhoneNumber: this.form.value.PhoneNumber ?? '',
-      Password: this.form.value.Password ?? '',
-      Role: this.form.value.Role ?? 'Agent'
+      name: this.form.value.name ?? '',
+      email: this.form.value.email ?? '',
+      username: this.form.value.username ?? '',
+      phoneNumber: this.form.value.phoneNumber ?? '',
+      password: this.form.value.password ?? '',
+      role: this.form.value.role ?? 'Agent',
+      isActive: this.form.value.isActive ?? true
     };
     this.svc.create(payload).subscribe({
       next: res => { if (res.isSuccess) this.router.navigate(['/users']); else { this.errorMsg = res.message; this.loading = false; } },

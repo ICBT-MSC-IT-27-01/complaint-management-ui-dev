@@ -2,6 +2,10 @@
   <h2 class="page-title">Client Ticket {{ complaint()?.ComplaintNumber || ('#' + id) }}</h2>
   <p class="page-subtitle">{{ complaint()?.Subject || 'Conversation timeline and reply panel.' }}</p>
 
+  <div *ngIf="loading()" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
   <div class="card mb-3">
     <div class="card-body">
       <div class="chat-bubble agent">Hello, thanks for reporting this. Please share additional details for faster resolution.</div>
@@ -11,10 +15,12 @@
 
   <div class="card">
     <div class="card-body">
+      <div class="alert alert-success py-2" *ngIf="successMsg">{{ successMsg }}</div>
+      <div class="alert alert-danger py-2" *ngIf="errorMsg">{{ errorMsg }}</div>
       <label class="form-label">Reply</label>
-      <textarea class="form-control" rows="4" placeholder="Type your reply..."></textarea>
+      <textarea class="form-control" rows="4" [(ngModel)]="replyMessage" placeholder="Type your reply..."></textarea>
       <div class="text-end mt-3">
-        <button class="btn btn-primary">Send Reply</button>
+        <button class="btn btn-primary" (click)="sendReply()">Send Reply</button>
       </div>
     </div>
   </div>

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '@core/services/user.service';
 import { User, UserSearchRequest } from '@core/models/user.model';
 import { PagedResult } from '@core/models/api-response.model';
+import { downloadBlobFile } from '@core/utils/download.util';
 
 @Component({
   selector: 'app-users-list',
@@ -17,7 +18,7 @@ import { PagedResult } from '@core/models/api-response.model';
         <p class="page-sub">Manage access, assign roles, and configure hierarchy for your team.</p>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary"><i class="bi bi-download me-1"></i> Export CSV</button>
+        <button class="btn btn-outline-primary" (click)="exportCsv()"><i class="bi bi-download me-1"></i> Export CSV</button>
         <a routerLink="/users/new" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Create User</a>
       </div>
     </div>
@@ -120,6 +121,11 @@ export class UsersListComponent implements OnInit {
   clearFilters(): void { this.req = { Page: 1, PageSize: 20 }; this.load(); }
   changePage(delta: number): void { this.req.Page = (this.req.Page ?? 1) + delta; this.load(); }
   delete(id: number): void { if (!confirm('Deactivate this user?')) return; this.svc.delete(id).subscribe(() => this.load()); }
+  exportCsv(): void {
+    this.svc.exportCsv().subscribe({
+      next: (blob) => downloadBlobFile(blob, `users-${new Date().toISOString().slice(0, 10)}.csv`)
+    });
+  }
 
   getRoleClass(r: string): string {
     return { Admin: 'bg-danger', Supervisor: 'bg-warning text-dark', Agent: 'bg-primary', Client: 'bg-info text-dark' }[r] ?? 'bg-secondary';

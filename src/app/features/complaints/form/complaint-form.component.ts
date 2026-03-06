@@ -177,20 +177,28 @@ export class ComplaintFormComponent implements OnInit {
     this.loading.set(true);
     this.errorMsg = '';
     const v = this.form.getRawValue();
-    this.svc
-      .create({
-        ClientId: v.clientId ?? undefined,
-        ClientName: v.clientName || undefined,
-        ClientEmail: v.clientEmail || undefined,
-        ClientMobile: v.clientMobile || undefined,
-        ComplaintChannelId: Number(v.complaintChannelId),
-        ComplaintCategoryId: Number(v.complaintCategoryId),
-        SubCategoryId: v.subCategoryId ?? undefined,
-        Subject: v.subject || '',
-        Description: v.description || '',
-        Priority: v.priority || 'Medium'
-      })
-      .subscribe({
+    const request$ = this.auth.hasRole('Client')
+      ? this.svc.createFromClientPortal({
+          ComplaintCategoryId: Number(v.complaintCategoryId),
+          SubCategoryId: v.subCategoryId ?? undefined,
+          Subject: v.subject || '',
+          Description: v.description || '',
+          Priority: v.priority || 'Medium'
+        })
+      : this.svc.create({
+          ClientId: v.clientId ?? undefined,
+          ClientName: v.clientName || undefined,
+          ClientEmail: v.clientEmail || undefined,
+          ClientMobile: v.clientMobile || undefined,
+          ComplaintChannelId: Number(v.complaintChannelId),
+          ComplaintCategoryId: Number(v.complaintCategoryId),
+          SubCategoryId: v.subCategoryId ?? undefined,
+          Subject: v.subject || '',
+          Description: v.description || '',
+          Priority: v.priority || 'Medium'
+        });
+
+    request$.subscribe({
         next: (res) => {
           if (res.isSuccess) {
             if (this.auth.hasRole('Client')) {

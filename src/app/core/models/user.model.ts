@@ -12,21 +12,22 @@ export interface User {
 }
 
 export interface CreateUserRequest {
-  Name: string;
-  Email: string;
-  Username: string;
-  PhoneNumber?: string;
-  Password: string;
-  Role: string;
+  name: string;
+  email: string;
+  username: string;
+  phoneNumber?: string;
+  password: string;
+  role: string;
+  isActive: boolean;
 }
 
 export interface UpdateUserRequest {
-  Name: string;
-  Email: string;
-  Username: string;
-  PhoneNumber?: string;
-  Role: string;
-  IsActive?: boolean;
+  name: string;
+  email: string;
+  username: string;
+  phoneNumber?: string;
+  role: string;
+  isActive: boolean;
 }
 
 export interface ChangePasswordRequest {

@@ -6,6 +6,7 @@ import { ComplaintService } from '@core/services/complaint.service';
 import { AuthService } from '@core/services/auth.service';
 import { Complaint, ComplaintSearchRequest } from '@core/models/complaint.model';
 import { PagedResult } from '@core/models/api-response.model';
+import { downloadBlobFile } from '@core/utils/download.util';
 
 @Component({
   selector: 'app-complaints-list',
@@ -17,9 +18,14 @@ import { PagedResult } from '@core/models/api-response.model';
         <h2 class="page-title">Complaints</h2>
         <p class="page-sub">Manage and track all complaints</p>
       </div>
-      <a routerLink="/complaints/new" class="btn btn-primary" *ngIf="auth.hasRole('Admin','Supervisor','Agent')">
-        <i class="bi bi-plus-lg me-1"></i> New Complaint
-      </a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" (click)="exportCsv()">
+          <i class="bi bi-download me-1"></i> Export CSV
+        </button>
+        <a routerLink="/complaints/new" class="btn btn-primary" *ngIf="auth.hasRole('Admin','Supervisor','Agent')">
+          <i class="bi bi-plus-lg me-1"></i> New Complaint
+        </a>
+      </div>
     </div>
 
     <div class="card cms-card mb-3">
@@ -115,6 +121,12 @@ export class ComplaintsListComponent implements OnInit {
   changePage(delta: number): void {
     this.req.Page = (this.req.Page ?? 1) + delta;
     this.load();
+  }
+
+  exportCsv(): void {
+    this.svc.exportCsv().subscribe({
+      next: (blob) => downloadBlobFile(blob, `complaints-${new Date().toISOString().slice(0, 10)}.csv`)
+    });
   }
 
   getPriorityClass(p: string): string {

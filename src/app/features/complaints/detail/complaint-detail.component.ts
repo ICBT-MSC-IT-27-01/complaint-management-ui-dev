@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ComplaintService } from '@core/services/complaint.service';
 import { AuthService } from '@core/services/auth.service';
-import { Complaint, ComplaintHistory } from '@core/models/complaint.model';
+import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/complaint.model';
 
 @Component({
   selector: 'app-complaint-detail',
@@ -60,6 +60,19 @@ import { Complaint, ComplaintHistory } from '@core/models/complaint.model';
         </div>
 
         <div class="col-xl-3 col-lg-12">
+          <div class="card cms-card mb-3">
+            <div class="card-body">
+              <h4 class="fw-bold mb-3">SLA Timer</h4>
+              <p class="mb-1">
+                <span class="badge" [class]="slaTimer()?.isBreached ? 'bg-danger' : 'bg-success'">
+                  {{ slaTimer()?.isBreached ? 'Breached' : 'On Track' }}
+                </span>
+              </p>
+              <p class="mb-1 text-muted">{{ slaStatusText() }}</p>
+              <small class="text-muted" *ngIf="slaTimer()?.dueDateUtc">Due: {{ slaTimer()?.dueDateUtc | date:'medium' }}</small>
+            </div>
+          </div>
+
           <div class="card cms-card">
             <div class="card-body">
               <h4 class="fw-bold mb-3">Current Status</h4>
@@ -92,6 +105,7 @@ export class ComplaintDetailComponent implements OnInit {
 
   complaint = signal<Complaint | null>(null);
   history = signal<ComplaintHistory[]>([]);
+  slaTimer = signal<ComplaintSlaTimer | null>(null);
   loading = signal(true);
 
   noteForm = this.fb.group({ note: ['', Validators.required] });
@@ -132,6 +146,13 @@ export class ComplaintDetailComponent implements OnInit {
 
     this.complaintSvc.getHistory(id).subscribe({
       next: (r) => { if (r.isSuccess) this.history.set((r.data ?? []).map((h) => this.normalizeHistory(h))); }
+    });
+
+    this.complaintSvc.getSlaTimer(id).subscribe({
+      next: (r) => {
+        if (!r.isSuccess) return;
+        this.slaTimer.set(this.normalizeSla(r.data));
+      }
     });
   }
 
@@ -258,6 +279,39 @@ export class ComplaintDetailComponent implements OnInit {
       Note: h.Note ?? item.note,
       PerformedByName: h.PerformedByName ?? item.performedByName ?? 'System',
       CreatedDateTime: h.CreatedDateTime ?? item.createdDateTime ?? new Date().toISOString()
+    };
+  }
+
+  slaStatusText(): string {
+    const timer = this.slaTimer();
+    if (!timer) return 'Not available';
+    if (timer.remainingText) return timer.remainingText;
+    if (typeof timer.remainingMinutes === 'number') return `${timer.remainingMinutes} min remaining`;
+    if (timer.status) return timer.status;
+    return 'Not available';
+  }
+
+  private normalizeSla(value: ComplaintSlaTimer): ComplaintSlaTimer {
+    const item = value as ComplaintSlaTimer & {
+      ComplaintId?: number;
+      ComplaintNumber?: string;
+      DueDateUtc?: string;
+      RemainingMinutes?: number;
+      RemainingText?: string;
+      ElapsedMinutes?: number;
+      IsBreached?: boolean;
+      Status?: string;
+    };
+
+    return {
+      complaintId: value.complaintId ?? item.ComplaintId,
+      complaintNumber: value.complaintNumber ?? item.ComplaintNumber,
+      dueDateUtc: value.dueDateUtc ?? item.DueDateUtc,
+      remainingMinutes: value.remainingMinutes ?? item.RemainingMinutes,
+      remainingText: value.remainingText ?? item.RemainingText,
+      elapsedMinutes: value.elapsedMinutes ?? item.ElapsedMinutes,
+      isBreached: value.isBreached ?? item.IsBreached,
+      status: value.status ?? item.Status
     };
   }
 }

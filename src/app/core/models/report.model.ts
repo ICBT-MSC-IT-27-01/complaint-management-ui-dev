@@ -4,6 +4,8 @@ export interface DashboardData {
   resolvedToday: number;
   slaBreached: number;
   slaAtRisk: number;
+  slaCompliancePercent?: number;
+  avgResolutionHours?: number;
   myOpenComplaints: number;
   byStatus: StatusCount[];
   byPriority: PriorityCount[];
@@ -24,4 +26,13 @@ export interface ReportFilterRequest {
   to?: string;
   agentUserId?: number;
   categoryId?: number;
+}
+
+export interface ComplaintsSummaryReport {
+  totalComplaints?: number;
+  openComplaints?: number;
+  resolvedComplaints?: number;
+  pendingReviews?: number;
+  slaCompliancePercent?: number;
+  avgResolutionHours?: number;
 }

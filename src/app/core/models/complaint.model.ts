@@ -91,3 +91,26 @@ export interface ComplaintHistory {
   PerformedByName: string;
   CreatedDateTime: string;
 }
+
+export interface ClientPortalCreateComplaintRequest {
+  ComplaintCategoryId: number;
+  SubCategoryId?: number;
+  Subject: string;
+  Description: string;
+  Priority: string;
+}
+
+export interface ClientPortalReplyRequest {
+  Message: string;
+}
+
+export interface ComplaintSlaTimer {
+  complaintId?: number;
+  complaintNumber?: string;
+  dueDateUtc?: string;
+  remainingMinutes?: number;
+  remainingText?: string;
+  elapsedMinutes?: number;
+  isBreached?: boolean;
+  status?: string;
+}

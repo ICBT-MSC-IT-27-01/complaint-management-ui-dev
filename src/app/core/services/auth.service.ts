@@ -5,7 +5,16 @@ import { tap } from 'rxjs/operators';
 import { Observable, map } from 'rxjs';
 import { environment } from '@env/environment';
 import { ApiResponse } from '@core/models/api-response.model';
-import { LoginRequest, LoginResponse, AuthUser, CheckEmailRequest, ClientRegisterRequest, ClientEmailCheckResponse } from '@core/models/auth.model';
+import {
+  LoginRequest,
+  LoginResponse,
+  AuthUser,
+  CheckEmailRequest,
+  ClientRegisterRequest,
+  ClientEmailCheckResponse,
+  ForgotPasswordRequest,
+  ResetPasswordRequest
+} from '@core/models/auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -39,6 +48,14 @@ export class AuthService {
         if (res.isSuccess) this.persistSession(res.data);
       })
     );
+  }
+
+  forgotPassword(req: ForgotPasswordRequest): Observable<ApiResponse<object>> {
+    return this.http.post<ApiResponse<object>>(`${this.authBase}/forgot-password`, req);
+  }
+
+  resetPassword(req: ResetPasswordRequest): Observable<ApiResponse<object>> {
+    return this.http.post<ApiResponse<object>>(`${this.authBase}/reset-password`, req);
   }
 
   logout(): void {
@@ -76,6 +93,8 @@ export class AuthService {
     const fullName = String(data.fullName ?? data['FullName'] ?? '');
     const role = String(data.role ?? data['Role'] ?? '');
     const accessToken = String(data.accessToken ?? data['AccessToken'] ?? '');
+    const sessionIdRaw = data.sessionId ?? data['SessionId'];
+    const twoFactorRaw = data.twoFactorEnabled ?? data['TwoFactorEnabled'];
 
     if (!accessToken) return;
 
@@ -85,7 +104,9 @@ export class AuthService {
       username,
       fullName,
       role: (role || 'Client') as AuthUser['role'],
-      accessToken
+      accessToken,
+      sessionId: typeof sessionIdRaw === 'string' ? sessionIdRaw : undefined,
+      twoFactorEnabled: typeof twoFactorRaw === 'boolean' ? twoFactorRaw : undefined
     };
 
     localStorage.setItem(this.TOKEN_KEY, accessToken);

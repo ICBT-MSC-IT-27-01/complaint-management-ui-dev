@@ -31,6 +31,8 @@ export interface LoginResponse {
   role: string;
   accessToken: string;
   expiresAtUtc: string;
+  sessionId?: string;
+  twoFactorEnabled?: boolean;
 }
 
 export interface AuthUser {
@@ -40,4 +42,16 @@ export interface AuthUser {
   fullName: string;
   role: 'Admin' | 'Supervisor' | 'Agent' | 'Client';
   accessToken: string;
+  sessionId?: string;
+  twoFactorEnabled?: boolean;
+}
+
+export interface ForgotPasswordRequest {
+  Email: string;
+}
+
+export interface ResetPasswordRequest {
+  Token: string;
+  NewPassword: string;
+  ConfirmPassword: string;
 }

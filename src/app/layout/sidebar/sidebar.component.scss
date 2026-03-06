@@ -22,13 +22,13 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .btn-collapse:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
 }
 
 .cms-sidebar.collapsed .btn-collapse {

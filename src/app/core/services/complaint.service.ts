@@ -3,12 +3,25 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 import { ApiResponse, PagedResult } from '@core/models/api-response.model';
-import { Complaint, CreateComplaintRequest, ComplaintSearchRequest, AssignComplaintRequest, EscalateComplaintRequest, ResolveComplaintRequest, UpdateStatusRequest, ComplaintHistory } from '@core/models/complaint.model';
+import {
+  Complaint,
+  CreateComplaintRequest,
+  ComplaintSearchRequest,
+  AssignComplaintRequest,
+  EscalateComplaintRequest,
+  ResolveComplaintRequest,
+  UpdateStatusRequest,
+  ComplaintHistory,
+  ClientPortalCreateComplaintRequest,
+  ClientPortalReplyRequest,
+  ComplaintSlaTimer
+} from '@core/models/complaint.model';
 
 @Injectable({ providedIn: 'root' })
 export class ComplaintService {
   private http = inject(HttpClient);
   private base = `${environment.apiUrl}/complaints`;
+  private clientPortalBase = `${environment.apiUrl}/client-portal/complaints`;
 
   search(req: ComplaintSearchRequest): Observable<ApiResponse<PagedResult<Complaint>>> {
     let params = new HttpParams();
@@ -50,5 +63,25 @@ export class ComplaintService {
 
   delete(id: number): Observable<ApiResponse<object>> {
     return this.http.delete<ApiResponse<object>>(`${this.base}/${id}`);
+  }
+
+  getSlaTimer(id: number): Observable<ApiResponse<ComplaintSlaTimer>> {
+    return this.http.get<ApiResponse<ComplaintSlaTimer>>(`${this.base}/${id}/sla-timer`);
+  }
+
+  exportCsv(): Observable<Blob> {
+    return this.http.get(`${this.base}/export/csv`, { responseType: 'blob' });
+  }
+
+  createFromClientPortal(req: ClientPortalCreateComplaintRequest): Observable<ApiResponse<Complaint>> {
+    return this.http.post<ApiResponse<Complaint>>(this.clientPortalBase, req);
+  }
+
+  listClientPortalComplaints(): Observable<ApiResponse<Complaint[]>> {
+    return this.http.get<ApiResponse<Complaint[]>>(this.clientPortalBase);
+  }
+
+  replyFromClientPortal(id: number, req: ClientPortalReplyRequest): Observable<ApiResponse<object>> {
+    return this.http.post<ApiResponse<object>>(`${this.clientPortalBase}/${id}/reply`, req);
   }
 }

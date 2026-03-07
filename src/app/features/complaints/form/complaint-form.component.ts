@@ -177,6 +177,7 @@ export class ComplaintFormComponent implements OnInit {
 
     const request$ = this.auth.hasRole('Client')
       ? this.svc.createFromClientPortal({
+          ComplaintChannelId: Number(v.complaintChannelId || 3),
           ComplaintCategoryId: complaintCategoryId,
           SubCategoryId: subCategoryId,
           Subject: v.subject || '',

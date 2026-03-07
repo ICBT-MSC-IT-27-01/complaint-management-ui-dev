@@ -34,16 +34,16 @@ export interface Complaint {
 }
 
 export interface CreateComplaintRequest {
+  ComplaintChannelId: number;
+  ComplaintCategoryId: number;
+  Subject: string;
+  Description: string;
+  Priority: string;
   ClientId?: number;
   ClientName?: string;
   ClientEmail?: string;
   ClientMobile?: string;
-  ComplaintChannelId: number;
-  ComplaintCategoryId: number;
   SubCategoryId?: number;
-  Subject: string;
-  Description: string;
-  Priority: string;
 }
 
 export interface ComplaintSearchRequest {
@@ -93,6 +93,7 @@ export interface ComplaintHistory {
 }
 
 export interface ClientPortalCreateComplaintRequest {
+  ComplaintChannelId: number;
   ComplaintCategoryId: number;
   SubCategoryId?: number;
   Subject: string;

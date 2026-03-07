@@ -38,16 +38,16 @@ export class ComplaintNewComponent {
 
     const formValue = this.form.getRawValue();
     const payload: CreateComplaintRequest = {
-      clientId: formValue.clientId ?? undefined,
-      clientName: formValue.clientName ?? undefined,
-      clientEmail: formValue.clientEmail ?? undefined,
-      clientMobile: formValue.clientMobile ?? undefined,
-      complaintChannelId: Number(formValue.complaintChannelId ?? 2),
-      complaintCategoryId: Number(formValue.complaintCategoryId ?? 1),
-      subCategoryId: formValue.subCategoryId ?? undefined,
-      subject: formValue.subject ?? '',
-      description: formValue.description ?? '',
-      priority: (formValue.priority ?? 'Medium') as CreateComplaintRequest['priority']
+      ClientId: formValue.clientId ?? undefined,
+      ClientName: formValue.clientName ?? undefined,
+      ClientEmail: formValue.clientEmail ?? undefined,
+      ClientMobile: formValue.clientMobile ?? undefined,
+      ComplaintChannelId: Number(formValue.complaintChannelId ?? 2),
+      ComplaintCategoryId: Number(formValue.complaintCategoryId ?? 1),
+      SubCategoryId: formValue.subCategoryId ?? undefined,
+      Subject: formValue.subject ?? '',
+      Description: formValue.description ?? '',
+      Priority: formValue.priority ?? 'Medium'
     };
 
     this.complaintService.create(payload).subscribe({

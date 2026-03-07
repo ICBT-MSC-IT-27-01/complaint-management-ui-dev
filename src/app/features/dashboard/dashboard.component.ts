@@ -6,6 +6,8 @@ import { AuthService } from '@core/services/auth.service';
 import { DashboardData, AgentPerformanceStat, ComplaintsSummaryReport } from '@core/models/report.model';
 import { ComplaintService } from '@core/services/complaint.service';
 import { Complaint } from '@core/models/complaint.model';
+import { PagedResult } from '@core/models/api-response.model';
+import { EMPTY, expand, map, reduce } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -145,22 +147,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.auth.hasRole('Admin', 'Supervisor')) {
-      this.reportSvc.getDashboard().subscribe({
-        next: res => {
-          const parsed = this.parseEnvelope<DashboardData>(res);
-          if (parsed.ok && parsed.data) this.data.set(this.normalizeDashboard(parsed.data));
-          this.loading.set(false);
-        },
-        error: () => this.loading.set(false)
-      });
-
-      this.reportSvc.getComplaintSummary({}).subscribe({
-        next: (res) => {
-          const parsed = this.parseEnvelope<ComplaintsSummaryReport>(res);
-          if (!parsed.ok || !parsed.data) return;
-          this.byUserCounts.set(this.readAgentStats(parsed.data));
-        }
-      });
+      this.loadManagementDashboard();
       return;
     }
 
@@ -237,6 +224,84 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
+    });
+  }
+
+  private loadManagementDashboard(): void {
+    const pageSize = 200;
+    this.complaintSvc.search({ Page: 1, PageSize: pageSize }).pipe(
+      expand((res) => {
+        const parsed = this.parseEnvelope<PagedResult<Complaint>>(res);
+        if (!parsed.ok || !parsed.data) return EMPTY;
+        const currentPage = parsed.data.page ?? 1;
+        const totalPages = parsed.data.totalPages ?? 1;
+        const nextPage = currentPage + 1;
+        if (nextPage > totalPages) return EMPTY;
+        return this.complaintSvc.search({ Page: nextPage, PageSize: pageSize });
+      }),
+      map((res) => this.parseEnvelope<PagedResult<Complaint>>(res)),
+      reduce((all, parsed) => {
+        if (parsed.ok && parsed.data?.items?.length) all.push(...parsed.data.items);
+        return all;
+      }, [] as Complaint[])
+    ).subscribe({
+      next: (items) => {
+        const normalized = items.map((x) => this.normalizeComplaint(x));
+        const totalComplaints = normalized.length;
+        const openComplaints = normalized.filter((x) => !this.isClosedStatus(x.status)).length;
+        const resolvedToday = normalized.filter((x) => this.isResolvedToday(x.status, x.resolvedDate)).length;
+        const slaBreached = normalized.filter((x) => this.isBreached(x.slaStatus, x.isSlaBreached)).length;
+        const slaAtRisk = normalized.filter((x) => this.isAtRisk(x.slaStatus)).length;
+        const resolvedWithDuration = normalized
+          .filter((x) => this.isClosedStatus(x.status))
+          .map((x) => this.resolutionHours(x.createdDateTime, x.resolvedDate))
+          .filter((x): x is number => x != null);
+        const avgResolutionHours = resolvedWithDuration.length
+          ? Math.round((resolvedWithDuration.reduce((sum, value) => sum + value, 0) / resolvedWithDuration.length) * 100) / 100
+          : 0;
+
+        const byStatusMap = new Map<string, number>();
+        const byPriorityMap = new Map<string, number>();
+        for (const item of normalized) {
+          byStatusMap.set(item.status, (byStatusMap.get(item.status) ?? 0) + 1);
+          byPriorityMap.set(item.priority, (byPriorityMap.get(item.priority) ?? 0) + 1);
+        }
+
+        this.data.set({
+          totalComplaints,
+          openComplaints,
+          resolvedToday,
+          slaBreached,
+          slaAtRisk,
+          myOpenComplaints: openComplaints,
+          slaCompliancePercent: totalComplaints ? Math.round(((totalComplaints - slaBreached) * 10000) / totalComplaints) / 100 : 0,
+          avgResolutionHours,
+          byStatus: Array.from(byStatusMap.entries()).map(([status, count]) => ({ status, count })),
+          byPriority: Array.from(byPriorityMap.entries()).map(([priority, count]) => ({ priority, count }))
+        });
+        this.byUserCounts.set(this.buildByUserCounts(items));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.fallbackManagementStats();
+      }
+    });
+  }
+
+  private fallbackManagementStats(): void {
+    this.reportSvc.getDashboard().subscribe({
+      next: (res) => {
+        const parsed = this.parseEnvelope<DashboardData>(res);
+        if (parsed.ok && parsed.data) this.data.set(this.normalizeDashboard(parsed.data));
+      }
+    });
+
+    this.reportSvc.getComplaintSummary({}).subscribe({
+      next: (res) => {
+        const parsed = this.parseEnvelope<ComplaintsSummaryReport>(res);
+        if (parsed.ok && parsed.data) this.byUserCounts.set(this.readAgentStats(parsed.data));
+      }
     });
   }
 
@@ -326,6 +391,8 @@ export class DashboardComponent implements OnInit {
   private normalizeComplaint(value: Complaint): {
     status: string;
     priority: string;
+    assignedToName?: string;
+    createdDateTime?: string;
     resolvedDate?: string;
     slaStatus?: string;
     isSlaBreached?: boolean;
@@ -333,6 +400,8 @@ export class DashboardComponent implements OnInit {
     const item = value as Complaint & {
       status?: string;
       priority?: string;
+      assignedToName?: string;
+      createdDateTime?: string;
       resolvedDate?: string;
       slaStatus?: string;
       isSlaBreached?: boolean;
@@ -341,10 +410,53 @@ export class DashboardComponent implements OnInit {
     return {
       status: value.Status ?? item.status ?? 'New',
       priority: value.Priority ?? item.priority ?? 'Medium',
+      assignedToName: value.AssignedToName ?? item.assignedToName,
+      createdDateTime: value.CreatedDateTime ?? item.createdDateTime,
       resolvedDate: value.ResolvedDate ?? item.resolvedDate,
       slaStatus: value.SlaStatus ?? item.slaStatus,
       isSlaBreached: value.IsSlaBreached ?? item.isSlaBreached
     };
+  }
+
+  private buildByUserCounts(items: Complaint[]): AgentPerformanceStat[] {
+    const mapByUser = new Map<string, { assigned: number; resolved: number; totalResolutionHours: number; resolvedWithDuration: number }>();
+
+    for (const raw of items) {
+      const item = this.normalizeComplaint(raw);
+      const key = item.assignedToName?.trim() || 'Unassigned';
+      const existing = mapByUser.get(key) ?? { assigned: 0, resolved: 0, totalResolutionHours: 0, resolvedWithDuration: 0 };
+      existing.assigned += 1;
+      if (this.isClosedStatus(item.status)) {
+        existing.resolved += 1;
+        const hours = this.resolutionHours(item.createdDateTime, item.resolvedDate);
+        if (hours != null) {
+          existing.totalResolutionHours += hours;
+          existing.resolvedWithDuration += 1;
+        }
+      }
+      mapByUser.set(key, existing);
+    }
+
+    return Array.from(mapByUser.entries())
+      .map(([agentName, stat]) => ({
+        agentName,
+        assigned: stat.assigned,
+        resolved: stat.resolved,
+        avgResolutionHours: stat.resolvedWithDuration
+          ? Math.round((stat.totalResolutionHours / stat.resolvedWithDuration) * 100) / 100
+          : 0
+      }))
+      .sort((a, b) => (b.assigned ?? 0) - (a.assigned ?? 0));
+  }
+
+  private resolutionHours(createdDateTime?: string, resolvedDate?: string): number | null {
+    if (!createdDateTime || !resolvedDate) return null;
+    const created = new Date(createdDateTime);
+    const resolved = new Date(resolvedDate);
+    const createdMs = created.getTime();
+    const resolvedMs = resolved.getTime();
+    if (Number.isNaN(createdMs) || Number.isNaN(resolvedMs) || resolvedMs < createdMs) return null;
+    return (resolvedMs - createdMs) / (1000 * 60 * 60);
   }
 
   private isClosedStatus(status: string): boolean {

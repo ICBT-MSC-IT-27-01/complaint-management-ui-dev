@@ -35,4 +35,19 @@ export interface ComplaintsSummaryReport {
   pendingReviews?: number;
   slaCompliancePercent?: number;
   avgResolutionHours?: number;
+  agentStats?: AgentPerformanceStat[];
+  categoryStats?: CategoryCountStat[];
+}
+
+export interface AgentPerformanceStat {
+  userId?: number;
+  agentName?: string;
+  assigned?: number;
+  resolved?: number;
+  avgResolutionHours?: number;
+}
+
+export interface CategoryCountStat {
+  category?: string;
+  count?: number;
 }

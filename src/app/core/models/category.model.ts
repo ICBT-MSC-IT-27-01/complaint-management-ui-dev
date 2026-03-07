@@ -2,6 +2,7 @@ export interface Category {
   id: number;
   name: string;
   parentCategoryId?: number;
+  parentName?: string;
   parentCategoryName?: string;
   sortOrder: number;
   isActive: boolean;
@@ -10,7 +11,12 @@ export interface Category {
 
 export interface CreateCategoryRequest {
   name: string;
-  parentCategoryId?: number;
+  parentCategoryId: number;
+  sortOrder?: number;
+}
+
+export interface CreateParentCategoryRequest {
+  name: string;
   sortOrder?: number;
 }
 

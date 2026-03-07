@@ -12,6 +12,8 @@ import { Client } from '@core/models/client.model';
 interface CategoryOption {
   id: number;
   name: string;
+  parentCategoryId?: number;
+  parentCategoryName?: string;
   children: CategoryOption[];
 }
 
@@ -57,11 +59,8 @@ interface CategoryOption {
               <div class="form-error" *ngIf="f['complaintCategoryId'].touched && f['complaintCategoryId'].invalid">Required.</div>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-medium">Subcategory</label>
-              <select class="form-select" formControlName="subCategoryId" [disabled]="!subCategoryOptions().length">
-                <option [ngValue]="null">Select subcategory...</option>
-                <option *ngFor="let sc of subCategoryOptions()" [ngValue]="sc.id">{{ sc.name }}</option>
-              </select>
+              <label class="form-label fw-medium">Parent Category</label>
+              <input type="text" class="form-control" [value]="selectedParentCategoryName()" readonly>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-medium">Priority <span class="text-danger">*</span></label>
@@ -104,6 +103,9 @@ interface CategoryOption {
                   Submit Complaint
                 </button>
                 <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" (click)="goToGrid()">
+                  <i class="bi bi-grid-3x3-gap-fill me-1"></i>Grid
+                </button>
               </div>
             </div>
           </div>
@@ -123,7 +125,6 @@ export class ComplaintFormComponent implements OnInit {
   clients = signal<Client[]>([]);
   categories = signal<Category[]>([]);
   categoryOptions = signal<CategoryOption[]>([]);
-  subCategoryOptions = signal<CategoryOption[]>([]);
   loading = signal(false);
   errorMsg = '';
 
@@ -134,7 +135,6 @@ export class ComplaintFormComponent implements OnInit {
     clientMobile: [''],
     complaintChannelId: [1, Validators.required],
     complaintCategoryId: ['', Validators.required],
-    subCategoryId: [null as number | null],
     subject: ['', [Validators.required, Validators.maxLength(300)]],
     description: ['', Validators.required],
     priority: ['Medium', Validators.required]
@@ -154,14 +154,8 @@ export class ComplaintFormComponent implements OnInit {
     this.catSvc.getAll().subscribe((r) => {
       if (!r.isSuccess) return;
       this.categories.set(r.data);
-      const options = (r.data ?? []).map((c) => this.mapCategory(c)).filter((c) => !!c.id);
+      const options = this.buildCategoryOptions(r.data ?? []);
       this.categoryOptions.set(options);
-      this.updateSubCategories(this.form.value.complaintCategoryId);
-    });
-
-    this.f.complaintCategoryId.valueChanges.subscribe((value) => {
-      this.form.patchValue({ subCategoryId: null }, { emitEvent: false });
-      this.updateSubCategories(value);
     });
 
     this.f.clientId.valueChanges.subscribe((value) => {
@@ -177,10 +171,14 @@ export class ComplaintFormComponent implements OnInit {
     this.loading.set(true);
     this.errorMsg = '';
     const v = this.form.getRawValue();
+    const selectedCategory = this.selectedCategoryOption();
+    const complaintCategoryId = selectedCategory?.parentCategoryId ?? Number(v.complaintCategoryId);
+    const subCategoryId = selectedCategory?.parentCategoryId ? selectedCategory.id : undefined;
+
     const request$ = this.auth.hasRole('Client')
       ? this.svc.createFromClientPortal({
-          ComplaintCategoryId: Number(v.complaintCategoryId),
-          SubCategoryId: v.subCategoryId ?? undefined,
+          ComplaintCategoryId: complaintCategoryId,
+          SubCategoryId: subCategoryId,
           Subject: v.subject || '',
           Description: v.description || '',
           Priority: v.priority || 'Medium'
@@ -191,8 +189,8 @@ export class ComplaintFormComponent implements OnInit {
           ClientEmail: v.clientEmail || undefined,
           ClientMobile: v.clientMobile || undefined,
           ComplaintChannelId: Number(v.complaintChannelId),
-          ComplaintCategoryId: Number(v.complaintCategoryId),
-          SubCategoryId: v.subCategoryId ?? undefined,
+          ComplaintCategoryId: complaintCategoryId,
+          SubCategoryId: subCategoryId,
           Subject: v.subject || '',
           Description: v.description || '',
           Priority: v.priority || 'Medium'
@@ -205,7 +203,12 @@ export class ComplaintFormComponent implements OnInit {
               this.router.navigate(['/my-complaints']);
               return;
             }
-            this.router.navigate(['/complaints', res.data.ComplaintNumber]);
+            const routeKey = this.complaintRouteKeyFromCreateResponse(res.data);
+            if (routeKey != null && routeKey !== '') {
+              this.router.navigate(['/complaints', routeKey]);
+              return;
+            }
+            this.router.navigate(['/complaints']);
           } else {
             this.errorMsg = res.message;
             this.loading.set(false);
@@ -219,6 +222,14 @@ export class ComplaintFormComponent implements OnInit {
   }
 
   onCancel(): void {
+    if (this.auth.hasRole('Client')) {
+      this.router.navigate(['/my-complaints']);
+      return;
+    }
+    this.router.navigate(['/complaints']);
+  }
+
+  goToGrid(): void {
     if (this.auth.hasRole('Client')) {
       this.router.navigate(['/my-complaints']);
       return;
@@ -257,26 +268,81 @@ export class ComplaintFormComponent implements OnInit {
       Id?: number;
       Name?: string;
       Children?: Category[];
+      ParentCategoryId?: number;
+      ParentName?: string;
+      ParentCategoryName?: string;
       id?: number;
       name?: string;
       children?: Category[];
+      parentCategoryId?: number;
+      parentName?: string;
+      parentCategoryName?: string;
     };
 
     const children = (item.children ?? item.Children ?? []).map((x) => this.mapCategory(x));
     return {
       id: item.id ?? item.Id ?? 0,
       name: item.name ?? item.Name ?? '',
+      parentCategoryId: item.parentCategoryId ?? item.ParentCategoryId,
+      parentCategoryName: item.parentName ?? item.ParentName ?? item.parentCategoryName ?? item.ParentCategoryName,
       children
     };
   }
 
-  private updateSubCategories(categoryIdValue: unknown): void {
-    const categoryId = Number(categoryIdValue);
-    if (!categoryId) {
-      this.subCategoryOptions.set([]);
-      return;
-    }
-    const selected = this.categoryOptions().find((c) => c.id === categoryId);
-    this.subCategoryOptions.set(selected?.children ?? []);
+  private buildCategoryOptions(categories: Category[]): CategoryOption[] {
+    const roots = categories.map((c) => this.mapCategory(c)).filter((c) => !!c.id);
+    const result: CategoryOption[] = [];
+
+    const walk = (items: CategoryOption[], parent?: CategoryOption): void => {
+      for (const item of items) {
+        if (parent) {
+          result.push({
+            ...item,
+            parentCategoryId: parent.id,
+            parentCategoryName: parent.name,
+            children: []
+          });
+        } else if (!item.children.length) {
+          result.push({ ...item, children: [] });
+        }
+
+        if (item.children.length) {
+          walk(item.children, item);
+        }
+      }
+    };
+
+    walk(roots);
+    return result;
+  }
+
+  private selectedCategoryOption(): CategoryOption | undefined {
+    const selectedId = Number(this.form.value.complaintCategoryId);
+    if (!selectedId) return undefined;
+    return this.categoryOptions().find((c) => c.id === selectedId);
+  }
+
+  selectedParentCategoryName(): string {
+    const selected = this.selectedCategoryOption();
+    return selected?.parentCategoryName ?? '—';
+  }
+
+  private complaintRouteKeyFromCreateResponse(data: unknown): string | number | null {
+    if (!data || typeof data !== 'object') return null;
+
+    const item = data as {
+      ComplaintNumber?: string;
+      complaintNumber?: string;
+      Id?: number;
+      id?: number;
+    };
+
+    const complaintNumber = (item.ComplaintNumber ?? item.complaintNumber ?? '').trim();
+    if (complaintNumber) return complaintNumber;
+
+    const id = item.Id ?? item.id;
+    if (typeof id === 'number' && Number.isFinite(id) && id > 0) return id;
+
+    return null;
   }
 }

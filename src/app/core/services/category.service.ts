@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 import { ApiResponse } from '@core/models/api-response.model';
-import { Category, CreateCategoryRequest, SlaPolicy, CreateSlaPolicyRequest } from '@core/models/category.model';
+import { Category, CreateCategoryRequest, CreateParentCategoryRequest, SlaPolicy, CreateSlaPolicyRequest } from '@core/models/category.model';
 
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
@@ -15,6 +15,14 @@ export class CategoryService {
 
   getById(id: number): Observable<ApiResponse<Category>> {
     return this.http.get<ApiResponse<Category>>(`${environment.apiUrl}/categories/${id}`);
+  }
+
+  getParents(): Observable<ApiResponse<Category[]>> {
+    return this.http.get<ApiResponse<Category[]>>(`${environment.apiUrl}/categories/parents`);
+  }
+
+  createParent(req: CreateParentCategoryRequest): Observable<ApiResponse<Category>> {
+    return this.http.post<ApiResponse<Category>>(`${environment.apiUrl}/categories/parents`, req);
   }
 
   create(req: CreateCategoryRequest): Observable<ApiResponse<Category>> {

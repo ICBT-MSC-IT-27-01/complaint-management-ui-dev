@@ -27,6 +27,7 @@ export class SidebarComponent {
     { label: 'Complaints',  icon: 'chat-left-text-fill', route: '/complaints', roles: ['Admin', 'Supervisor', 'Agent'] },
     { label: 'My Complaints', icon: 'chat-left-dots-fill', route: '/my-complaints', roles: ['Client'] },
     { label: 'Categories',  icon: 'tags-fill',        route: '/categories', roles: ['Admin'] },
+    { label: 'Departments', icon: 'diagram-2-fill',   route: '/departments', roles: ['Admin', 'Supervisor'] },
     { label: 'Clients',     icon: 'building-fill',    route: '/clients', roles: ['Admin', 'Supervisor'] },
     { label: 'Users',       icon: 'people-fill',      route: '/users',      roles: ['Admin'] },
     { label: 'Teams',       icon: 'diagram-3-fill',   route: '/teams',      roles: ['Admin', 'Supervisor'] },

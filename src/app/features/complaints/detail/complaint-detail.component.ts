@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { NgFor, NgIf, DatePipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ComplaintService } from '@core/services/complaint.service';
 import { AuthService } from '@core/services/auth.service';
@@ -14,23 +14,28 @@ import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/com
     <div *ngIf="loading()" class="text-center py-5"><div class="spinner-border text-primary"></div></div>
 
     <ng-container *ngIf="complaint() as c">
-      <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+      <div class="page-header">
         <div>
-          <h2 class="cmp-title mb-1">#{{ c.ComplaintNumber }}</h2>
-          <p class="cmp-subtitle mb-0">{{ c.Subject }}</p>
+          <h2 class="page-title">#{{ c.ComplaintNumber }}</h2>
+          <p class="page-sub">{{ c.Subject }}</p>
         </div>
-        <span class="status-pill">{{ c.Status }}</span>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToGrid()">
+            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Grid
+          </button>
+          <span class="badge" [class]="statusBadgeClass(c.Status)">{{ c.Status }}</span>
+        </div>
       </div>
 
       <div class="row g-3 align-items-start">
         <div class="col-xl-3 col-lg-4">
           <div class="card cms-card h-100">
             <div class="card-body">
-              <h4 class="fw-bold mb-3">{{ c.ClientName || 'Unknown Client' }}</h4>
+              <h6 class="fw-semibold mb-3">{{ c.ClientName || 'Unknown Client' }}</h6>
               <p class="mb-2"><i class="bi bi-envelope me-2"></i>{{ c.ClientEmail || '-' }}</p>
               <p class="mb-2"><i class="bi bi-telephone me-2"></i>{{ c.ClientMobile || '-' }}</p>
               <p class="mb-4"><i class="bi bi-geo-alt me-2"></i>Location not available</p>
-              <h5 class="fw-bold mb-2">Original Complaint</h5>
+              <h6 class="fw-semibold mb-2">Original Complaint</h6>
               <p class="text-muted mb-0">{{ c.Description }}</p>
             </div>
           </div>
@@ -39,22 +44,22 @@ import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/com
         <div class="col-xl-6 col-lg-8">
           <div class="card cms-card mb-3" *ngIf="auth.hasRole('Admin','Supervisor','Agent')">
             <div class="card-body">
-              <h5 class="fw-bold mb-3">Internal Note</h5>
+              <h6 class="fw-semibold mb-3">Internal Note</h6>
               <form [formGroup]="noteForm" (ngSubmit)="postInternalNote()">
                 <textarea class="form-control mb-3" rows="4" formControlName="note" placeholder="Add internal note..."></textarea>
-                <div class="text-end"><button class="btn btn-primary" type="submit" [disabled]="noteForm.invalid">Post Internal Note</button></div>
+                <div class="text-end"><button class="btn btn-primary btn-sm" type="submit" [disabled]="noteForm.invalid">Post Internal Note</button></div>
               </form>
             </div>
           </div>
 
           <div class="card cms-card mb-3" *ngFor="let item of history()">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="fw-bold mb-0">{{ item.PerformedByName }}</h5>
-                <span class="text-muted">{{ item.CreatedDateTime | date:'shortTime' }}</span>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-semibold mb-0">{{ item.PerformedByName }}</h6>
+                <small class="text-muted">{{ item.CreatedDateTime | date:'shortTime' }}</small>
               </div>
               <span class="badge bg-light text-secondary border">{{ item.Action }}</span>
-              <p class="mb-0 mt-2 fs-5 text-dark">{{ item.Note || (item.OldStatus && item.NewStatus ? (item.OldStatus + ' -> ' + item.NewStatus) : 'Activity logged.') }}</p>
+              <p class="mb-0 mt-2">{{ item.Note || (item.OldStatus && item.NewStatus ? (item.OldStatus + ' -> ' + item.NewStatus) : 'Activity logged.') }}</p>
             </div>
           </div>
         </div>
@@ -62,7 +67,7 @@ import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/com
         <div class="col-xl-3 col-lg-12">
           <div class="card cms-card mb-3">
             <div class="card-body">
-              <h4 class="fw-bold mb-3">SLA Timer</h4>
+              <h6 class="fw-semibold mb-3">SLA Timer</h6>
               <p class="mb-1">
                 <span class="badge" [class]="slaTimer()?.isBreached ? 'bg-danger' : 'bg-success'">
                   {{ slaTimer()?.isBreached ? 'Breached' : 'On Track' }}
@@ -75,11 +80,11 @@ import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/com
 
           <div class="card cms-card">
             <div class="card-body">
-              <h4 class="fw-bold mb-3">Current Status</h4>
+              <h6 class="fw-semibold mb-3">Current Status</h6>
               <div class="d-grid gap-2">
-                <button class="btn status-btn" [class.status-btn-active]="c.ComplaintStatusId===3" (click)="changeStatus(3, 'In Progress')">In Progress</button>
-                <button class="btn status-btn" [class.status-btn-active]="c.ComplaintStatusId===4" (click)="changeStatus(4, 'Waiting for Client')">Waiting for Client</button>
-                <button class="btn status-btn status-btn-success" [class.status-btn-success-active]="c.ComplaintStatusId===5" (click)="changeStatus(5, 'Resolved')">Resolved</button>
+                <button class="btn status-action" [class.active]="c.ComplaintStatusId===3" (click)="changeStatus(3, 'In Progress')">In Progress</button>
+                <button class="btn status-action" [class.active]="c.ComplaintStatusId===4" (click)="changeStatus(4, 'Waiting for Client')">Waiting for Client</button>
+                <button class="btn status-action status-action-success" [class.active]="c.ComplaintStatusId===5" (click)="changeStatus(5, 'Resolved')">Resolved</button>
               </div>
             </div>
           </div>
@@ -88,17 +93,37 @@ import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/com
     </ng-container>
   `,
   styles: [`
-    .cmp-title { font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; }
-    .cmp-subtitle { color: #5c6f8f; font-size: 1.8rem; }
-    .status-pill { background: #fdf0d7; color: #9a6400; border-radius: 999px; padding: 0.4rem 1rem; font-weight: 600; font-size: 1.5rem; }
-    .status-btn { border: 1px solid #8ca0c0; color: #4c5f7f; background: #fff; font-size: 1.7rem; padding: 0.8rem 1rem; }
-    .status-btn-active { border-color: #1b4fd8; color: #1b4fd8; }
-    .status-btn-success { border-color: #3fa56d; color: #0c8a49; }
-    .status-btn-success-active { background: #e7f8ef; }
+    .status-action {
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .status-action:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .status-action.active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .status-action-success {
+      border-color: #86efac;
+      color: #15803d;
+    }
+    .status-action-success:hover,
+    .status-action-success.active {
+      background: #dcfce7;
+      border-color: #22c55e;
+      color: #15803d;
+    }
   `]
 })
 export class ComplaintDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private complaintSvc = inject(ComplaintService);
   private fb = inject(FormBuilder);
   auth = inject(AuthService);
@@ -280,6 +305,26 @@ export class ComplaintDetailComponent implements OnInit {
       PerformedByName: h.PerformedByName ?? item.performedByName ?? 'System',
       CreatedDateTime: h.CreatedDateTime ?? item.createdDateTime ?? new Date().toISOString()
     };
+  }
+
+  goToGrid(): void {
+    if (this.auth.hasRole('Client')) {
+      this.router.navigate(['/my-complaints']);
+      return;
+    }
+    this.router.navigate(['/complaints']);
+  }
+
+  statusBadgeClass(status: string): string {
+    const key = (status ?? '').toLowerCase().replace(/\s+/g, '');
+    return {
+      new: 'badge-status-new',
+      assigned: 'badge-status-assigned',
+      inprogress: 'badge-status-inprogress',
+      escalated: 'badge-status-escalated',
+      resolved: 'badge-status-resolved',
+      closed: 'badge-status-closed'
+    }[key] ?? 'bg-secondary';
   }
 
   slaStatusText(): string {

@@ -108,7 +108,11 @@ export class ComplaintsListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.svc.search(this.req).subscribe({
-      next: (res) => { if (res.isSuccess) this.result.set(res.data); this.loading.set(false); },
+      next: (res) => {
+        const parsed = this.parseEnvelope<PagedResult<Complaint>>(res);
+        if (parsed.ok && parsed.data) this.result.set(this.normalizePagedResult(parsed.data));
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false)
     });
   }
@@ -177,5 +181,36 @@ export class ComplaintsListComponent implements OnInit {
   assignee(c: Complaint): string {
     const item = c as Complaint & { assignedToName?: string };
     return c.AssignedToName ?? item.assignedToName ?? 'Unassigned';
+  }
+
+  private parseEnvelope<T>(response: unknown): { ok: boolean; data: T | null } {
+    const item = response as {
+      isSuccess?: boolean;
+      IsSuccess?: boolean;
+      data?: T;
+      Data?: T;
+    };
+
+    const ok = (item.isSuccess ?? item.IsSuccess) === true;
+    const data = (item.data ?? item.Data ?? null) as T | null;
+    return { ok, data };
+  }
+
+  private normalizePagedResult(value: PagedResult<Complaint> | Record<string, unknown>): PagedResult<Complaint> {
+    const item = value as PagedResult<Complaint> & {
+      Page?: number;
+      PageSize?: number;
+      TotalCount?: number;
+      TotalPages?: number;
+      Items?: Complaint[];
+    };
+
+    return {
+      page: item.page ?? item.Page ?? 1,
+      pageSize: item.pageSize ?? item.PageSize ?? 15,
+      totalCount: item.totalCount ?? item.TotalCount ?? 0,
+      totalPages: item.totalPages ?? item.TotalPages ?? 1,
+      items: item.items ?? item.Items ?? []
+    };
   }
 }

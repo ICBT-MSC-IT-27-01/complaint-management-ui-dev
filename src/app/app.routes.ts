@@ -40,6 +40,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/cases/cases.component').then(m => m.CasesComponent) },
       { path: 'categories', canActivate: [roleGuard], data: { roles: ['Admin'] },
         loadComponent: () => import('./features/categories/categories.component').then(m => m.CategoriesComponent) },
+      { path: 'departments', canActivate: [roleGuard], data: { roles: ['Admin','Supervisor'] },
+        loadComponent: () => import('./features/departments/departments.component').then(m => m.DepartmentsComponent) },
       { path: 'reports', canActivate: [roleGuard], data: { roles: ['Admin','Supervisor','Agent'] },
         loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent) },
       { path: 'teams', canActivate: [roleGuard], data: { roles: ['Admin','Supervisor'] },

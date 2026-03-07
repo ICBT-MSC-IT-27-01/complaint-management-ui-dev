@@ -14,7 +14,7 @@ import { AuthService } from '@core/services/auth.service';
         <div class="col-lg-5 d-flex align-items-center justify-content-center p-4">
           <div class="surface p-4 p-md-5 login-card w-100">
             <h1 class="mb-1">Forgot Password</h1>
-            <p class="text-muted mb-4">Enter your account email to receive reset instructions.</p>
+            <p class="text-muted mb-4">Enter your account email to receive a temporary password.</p>
 
             <div class="alert alert-success py-2" *ngIf="successMsg">{{ successMsg }}</div>
             <div class="alert alert-danger py-2" *ngIf="errorMsg">{{ errorMsg }}</div>
@@ -29,7 +29,7 @@ import { AuthService } from '@core/services/auth.service';
               </div>
 
               <button class="btn btn-primary" type="submit" [disabled]="loading">
-                {{ loading ? 'Sending...' : 'Send Reset Link' }}
+                {{ loading ? 'Sending...' : 'Send Temporary Password' }}
               </button>
               <a routerLink="/auth/login" class="btn btn-outline-secondary">Back to Login</a>
             </form>
@@ -37,8 +37,8 @@ import { AuthService } from '@core/services/auth.service';
         </div>
         <div class="col-lg-7 hero d-none d-lg-flex align-items-center justify-content-center">
           <div>
-            <h2>Secure account recovery flow for all users.</h2>
-            <p class="text-muted">Password reset instructions are sent through verified channels.</p>
+            <h2>Secure temporary password recovery for all users.</h2>
+            <p class="text-muted">A random 6-character temporary password is emailed to your registered address.</p>
           </div>
         </div>
       </div>
@@ -80,7 +80,7 @@ export class ForgotPasswordComponent {
       next: (res) => {
         this.loading = false;
         if (res.isSuccess) {
-          this.successMsg = res.message || 'If the email exists, a reset link has been sent.';
+          this.successMsg = this.extractSuccessMessage(res.data) || res.message || 'If the email exists, a temporary password has been sent.';
           return;
         }
         this.errorMsg = res.message || 'Unable to process request right now.';
@@ -90,5 +90,11 @@ export class ForgotPasswordComponent {
         this.errorMsg = err.error?.message || 'Unable to process request right now.';
       }
     });
+  }
+
+  private extractSuccessMessage(raw: unknown): string {
+    if (!raw || typeof raw !== 'object') return '';
+    const data = raw as Record<string, unknown>;
+    return String(data['message'] ?? data['Message'] ?? '').trim();
   }
 }

@@ -21,9 +21,17 @@ import { AuthService } from '@core/services/auth.service';
 
             <form [formGroup]="form" (ngSubmit)="submit()" class="d-grid gap-3">
               <div>
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" formControlName="email" />
+                <div class="form-error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+                  Enter a valid email address.
+                </div>
+              </div>
+
+              <div>
                 <label class="form-label">Reset Token</label>
-                <input type="text" class="form-control" formControlName="token" />
-                <div class="form-error" *ngIf="form.get('token')?.touched && form.get('token')?.invalid">
+                <input type="text" class="form-control" formControlName="resetToken" />
+                <div class="form-error" *ngIf="form.get('resetToken')?.touched && form.get('resetToken')?.invalid">
                   Reset token is required.
                 </div>
               </div>
@@ -76,7 +84,13 @@ export class ResetPasswordComponent {
   private route = inject(ActivatedRoute);
 
   form = this.fb.group({
-    token: [this.route.snapshot.queryParamMap.get('token') ?? '', Validators.required],
+    email: [this.route.snapshot.queryParamMap.get('email') ?? '', [Validators.required, Validators.email]],
+    resetToken: [
+      this.route.snapshot.queryParamMap.get('resetToken')
+      ?? this.route.snapshot.queryParamMap.get('token')
+      ?? '',
+      Validators.required
+    ],
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', Validators.required]
   });
@@ -105,7 +119,8 @@ export class ResetPasswordComponent {
     this.errorMsg = '';
 
     this.auth.resetPassword({
-      Token: this.form.value.token ?? '',
+      Email: this.form.value.email ?? '',
+      ResetToken: this.form.value.resetToken ?? '',
       NewPassword: newPassword,
       ConfirmPassword: confirmPassword
     }).subscribe({

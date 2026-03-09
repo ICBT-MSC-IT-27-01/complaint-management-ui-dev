@@ -1,0 +1,66 @@
+<section>
+  <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+    <div>
+      <h2 class="page-title">{{ complaintNumberOf(detail()) }}</h2>
+      <p class="page-subtitle">{{ detail()?.subject }}</p>
+    </div>
+    @if (detail()) {
+      <app-status-pill [text]="detail()!.status"></app-status-pill>
+    }
+  </div>
+
+  <div class="row g-3">
+    <div class="col-xl-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">{{ detail()?.clientName }}</h5>
+          <p class="mb-2"><i class="bi bi-envelope me-2"></i>{{ detail()?.clientEmail }}</p>
+          <p class="mb-2"><i class="bi bi-telephone me-2"></i>{{ detail()?.clientPhone }}</p>
+          <p class="mb-4"><i class="bi bi-geo-alt me-2"></i>{{ detail()?.location }}</p>
+          <h6 class="fw-bold">Original Complaint</h6>
+          <p class="text-muted mb-0">{{ detail()?.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <label class="form-label fw-semibold">Internal Note</label>
+          <textarea class="form-control mb-3" rows="4" [(ngModel)]="note" placeholder="Add internal note..."></textarea>
+          <div class="text-end">
+            <button class="btn btn-primary" (click)="postNote()">Post Internal Note</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="timeline d-grid gap-3">
+        @for (item of activity(); track item.activityId) {
+          <article class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>{{ item.actorName }}</strong>
+                <small class="text-muted">{{ item.createdAt | date: 'shortTime' }}</small>
+              </div>
+              <app-status-pill [text]="item.isInternal ? 'Internal Note' : 'Public Reply'"></app-status-pill>
+              <p class="mb-0 mt-2">{{ item.message }}</p>
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+
+    <div class="col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Current Status</h6>
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary">In Progress</button>
+            <button class="btn btn-outline-secondary">Waiting for Client</button>
+            <button class="btn btn-outline-success">Resolved</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

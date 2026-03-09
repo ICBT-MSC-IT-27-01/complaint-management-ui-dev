@@ -1,0 +1,12 @@
+.priority-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.4rem;
+}
+
+.dot-low { background: #9aa6ba; }
+.dot-medium { background: #f08a24; }
+.dot-high { background: #e35757; }
+.dot-critical { background: #ce2121; }

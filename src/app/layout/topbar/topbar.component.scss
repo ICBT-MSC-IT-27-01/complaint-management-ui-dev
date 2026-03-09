@@ -1,0 +1,41 @@
+.topbar {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-search {
+  max-width: 520px;
+  position: relative;
+}
+
+.topbar-search .bi {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.topbar-search .form-control {
+  padding-left: 2rem;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .topbar-search {
+    display: none;
+  }
+}

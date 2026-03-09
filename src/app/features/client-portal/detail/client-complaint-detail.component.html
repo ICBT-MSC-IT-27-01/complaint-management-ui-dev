@@ -1,0 +1,47 @@
+<section>
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Client Ticket {{ complaint()?.ComplaintNumber || ('#' + id) }}</h2>
+      <p class="page-sub">{{ complaint()?.Subject || 'Conversation timeline and reply panel.' }}</p>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToGrid()">
+      <i class="bi bi-arrow-left me-1"></i> Back
+    </button>
+  </div>
+
+  <div *ngIf="loading()" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card cms-card h-100">
+        <div class="card-body">
+          <h6 class="fw-semibold">{{ complaint()?.ComplaintNumber }}</h6>
+          <p class="text-muted mb-2">{{ complaint()?.Subject }}</p>
+          <p class="mb-0">{{ complaint()?.Description || 'No complaint details available.' }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card cms-card mb-3">
+        <div class="card-body">
+          <div class="chat-bubble client mb-2">{{ complaint()?.Description || 'No complaint details available.' }}</div>
+          <div class="chat-bubble agent">Hello, thanks for reporting this. Please share additional details for faster resolution.</div>
+        </div>
+      </div>
+
+      <div class="card cms-card">
+        <div class="card-body">
+          <div class="alert alert-success py-2" *ngIf="successMsg">{{ successMsg }}</div>
+          <div class="alert alert-danger py-2" *ngIf="errorMsg">{{ errorMsg }}</div>
+          <label class="form-label">Reply</label>
+          <textarea class="form-control" rows="4" [(ngModel)]="replyMessage" placeholder="Type your reply..."></textarea>
+          <div class="text-end mt-3">
+            <button class="btn btn-primary" (click)="sendReply()">Send Reply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

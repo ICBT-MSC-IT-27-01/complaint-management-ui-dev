@@ -1,0 +1,399 @@
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { NgFor, NgIf, DatePipe } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ComplaintService } from '@core/services/complaint.service';
+import { AuthService } from '@core/services/auth.service';
+import { Complaint, ComplaintHistory, ComplaintSlaTimer } from '@core/models/complaint.model';
+
+@Component({
+  selector: 'app-complaint-detail',
+  standalone: true,
+  imports: [NgIf, NgFor, DatePipe, ReactiveFormsModule],
+  template: `
+    <div *ngIf="loading()" class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+
+    <ng-container *ngIf="complaint() as c">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Case #{{ c.ComplaintNumber }}</h2>
+          <p class="page-sub">{{ c.Subject }}</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="goToGrid()">
+            <i class="bi bi-arrow-left me-1"></i> Back
+          </button>
+          <button
+            *ngIf="auth.hasRole('Admin','Supervisor','Agent')"
+            type="button"
+            class="btn btn-outline-danger btn-sm"
+            [disabled]="deleting()"
+            (click)="deleteComplaint()">
+            <i class="bi bi-trash me-1"></i> Delete
+          </button>
+          <span class="badge" [class]="statusBadgeClass(c.Status)">{{ c.Status }}</span>
+        </div>
+      </div>
+
+      <div class="row g-3 align-items-start">
+        <div class="col-xl-3 col-lg-4">
+          <div class="card cms-card mb-3">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">{{ c.ClientName || 'Unknown Client' }}</h6>
+              <p class="mb-2"><i class="bi bi-envelope me-2"></i>{{ c.ClientEmail || '-' }}</p>
+              <p class="mb-2"><i class="bi bi-telephone me-2"></i>{{ c.ClientMobile || '-' }}</p>
+              <p class="mb-0"><i class="bi bi-geo-alt me-2"></i>San Francisco, CA</p>
+            </div>
+          </div>
+
+          <div class="card cms-card">
+            <div class="card-header">
+              <h6 class="card-title">Original Complaint</h6>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-0">{{ c.Description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-6 col-lg-8">
+          <div class="card cms-card mb-3" *ngIf="auth.hasRole('Admin','Supervisor','Agent')">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">Internal Note</h6>
+              <form [formGroup]="noteForm" (ngSubmit)="postInternalNote()">
+                <textarea class="form-control mb-3" rows="4" formControlName="note" placeholder="Add an internal note for the team..."></textarea>
+                <div class="text-end"><button class="btn btn-primary btn-sm" type="submit" [disabled]="noteForm.invalid">Post Internal Note</button></div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card cms-card mb-3">
+            <div class="card-body">
+              <div *ngFor="let item of history()" class="d-flex gap-3 pb-3 mb-3 border-bottom">
+                <div class="user-avatar">{{ item.PerformedByName.charAt(0) }}</div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h6 class="fw-semibold mb-0">{{ item.PerformedByName }}</h6>
+                    <small class="text-muted">{{ item.CreatedDateTime | date:'shortTime' }}</small>
+                  </div>
+                  <span class="badge bg-light text-secondary border">{{ item.Action }}</span>
+                  <p class="mb-0 mt-2">{{ item.Note || (item.OldStatus && item.NewStatus ? (item.OldStatus + ' -> ' + item.NewStatus) : 'Activity logged.') }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-12">
+          <div class="card cms-card mb-3">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">SLA Timer</h6>
+              <p class="mb-1">
+                <span class="badge" [class]="slaTimer()?.isBreached ? 'bg-danger' : 'bg-success'">
+                  {{ slaTimer()?.isBreached ? 'Breached' : 'On Track' }}
+                </span>
+              </p>
+              <p class="mb-1 text-muted">{{ slaStatusText() }}</p>
+              <small class="text-muted" *ngIf="slaTimer()?.dueDateUtc">Due: {{ slaTimer()?.dueDateUtc | date:'medium' }}</small>
+            </div>
+          </div>
+
+          <div class="card cms-card">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">Current Status</h6>
+              <div class="d-grid gap-2">
+                <button class="btn status-action" [class.active]="c.ComplaintStatusId===3" (click)="changeStatus(3, 'In Progress')">In Progress</button>
+                <button class="btn status-action" [class.active]="c.ComplaintStatusId===4" (click)="changeStatus(4, 'Waiting for Client')">Waiting for Client</button>
+                <button class="btn status-action status-action-success" [class.active]="c.ComplaintStatusId===5" (click)="changeStatus(5, 'Resolved')">Resolved</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  `,
+  styles: [`
+    .status-action {
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .status-action:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .status-action.active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .status-action-success {
+      border-color: #86efac;
+      color: #15803d;
+    }
+    .status-action-success:hover,
+    .status-action-success.active {
+      background: #dcfce7;
+      border-color: #22c55e;
+      color: #15803d;
+    }
+  `]
+})
+export class ComplaintDetailComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private complaintSvc = inject(ComplaintService);
+  private fb = inject(FormBuilder);
+  auth = inject(AuthService);
+
+  complaint = signal<Complaint | null>(null);
+  history = signal<ComplaintHistory[]>([]);
+  slaTimer = signal<ComplaintSlaTimer | null>(null);
+  loading = signal(true);
+  deleting = signal(false);
+
+  noteForm = this.fb.group({ note: ['', Validators.required] });
+
+  ngOnInit(): void {
+    const routeValue = this.route.snapshot.paramMap.get('id') ?? '';
+    if (!routeValue) {
+      this.loading.set(false);
+      return;
+    }
+
+    const numericId = Number(routeValue);
+    if (!Number.isNaN(numericId) && numericId > 0) {
+      this.loadAll(numericId);
+      return;
+    }
+
+    this.complaintSvc.search({ Q: routeValue, Page: 1, PageSize: 20 }).subscribe({
+      next: (res) => {
+        if (!res.isSuccess) { this.loading.set(false); return; }
+        const match = res.data.items.find((x) => this.complaintNumber(x).toLowerCase() === routeValue.toLowerCase());
+        if (!match) { this.loading.set(false); return; }
+        this.loadAll(this.complaintId(match));
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  loadAll(id: number): void {
+    this.loading.set(true);
+    this.complaintSvc.getById(id).subscribe({
+      next: (r) => {
+        if (r.isSuccess) this.complaint.set(this.normalizeComplaint(r.data));
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+
+    this.complaintSvc.getHistory(id).subscribe({
+      next: (r) => { if (r.isSuccess) this.history.set((r.data ?? []).map((h) => this.normalizeHistory(h))); }
+    });
+
+    this.complaintSvc.getSlaTimer(id).subscribe({
+      next: (r) => {
+        if (!r.isSuccess) return;
+        this.slaTimer.set(this.normalizeSla(r.data));
+      }
+    });
+  }
+
+  postInternalNote(): void {
+    const c = this.complaint();
+    if (!c || this.noteForm.invalid) return;
+
+    const note = this.noteForm.getRawValue().note ?? '';
+    this.complaintSvc.updateStatus(c.Id, { StatusId: c.ComplaintStatusId, Note: note }).subscribe({
+      next: () => {
+        this.noteForm.reset();
+        this.loadAll(c.Id);
+      }
+    });
+  }
+
+  changeStatus(statusId: number, label: string): void {
+    const c = this.complaint();
+    if (!c || !this.auth.hasRole('Admin', 'Supervisor', 'Agent')) return;
+
+    this.complaintSvc.updateStatus(c.Id, { StatusId: statusId, Note: `Status changed to ${label}` }).subscribe({
+      next: () => this.loadAll(c.Id)
+    });
+  }
+
+  deleteComplaint(): void {
+    const c = this.complaint();
+    if (!c || !this.auth.hasRole('Admin', 'Supervisor', 'Agent')) return;
+    if (!confirm(`Delete complaint ${c.ComplaintNumber}? This action cannot be undone.`)) return;
+
+    this.deleting.set(true);
+    this.complaintSvc.delete(c.Id).subscribe({
+      next: (res) => {
+        if (!res.isSuccess) return;
+        this.goToGrid();
+      },
+      error: () => {},
+      complete: () => this.deleting.set(false)
+    });
+  }
+
+  private complaintId(c: Complaint): number {
+    const item = c as Complaint & { id?: number };
+    return c.Id ?? item.id ?? 0;
+  }
+
+  private complaintNumber(c: Complaint): string {
+    const item = c as Complaint & { complaintNumber?: string };
+    return c.ComplaintNumber ?? item.complaintNumber ?? '';
+  }
+
+  private normalizeComplaint(c: Complaint): Complaint {
+    const item = c as Complaint & {
+      id?: number;
+      complaintNumber?: string;
+      subject?: string;
+      description?: string;
+      priority?: string;
+      status?: string;
+      complaintStatusId?: number;
+      complaintChannelId?: number;
+      channel?: string;
+      complaintCategoryId?: number;
+      category?: string;
+      subCategoryId?: number;
+      clientId?: number;
+      clientName?: string;
+      clientEmail?: string;
+      clientMobile?: string;
+      assignedToUserId?: number;
+      assignedToName?: string;
+      assignedDate?: string;
+      dueDate?: string;
+      slaStatus?: string;
+      isSlaBreached?: boolean;
+      isResolved?: boolean;
+      resolvedDate?: string;
+      resolutionNotes?: string;
+      isClosed?: boolean;
+      closedDate?: string;
+      createdDateTime?: string;
+      createdBy?: number;
+      createdByName?: string;
+      updatedDateTime?: string;
+      isActive?: boolean;
+    };
+
+    return {
+      Id: c.Id ?? item.id ?? 0,
+      ComplaintNumber: c.ComplaintNumber ?? item.complaintNumber ?? '-',
+      Subject: c.Subject ?? item.subject ?? '',
+      Description: c.Description ?? item.description ?? '',
+      Priority: c.Priority ?? item.priority ?? '-',
+      Status: c.Status ?? item.status ?? '-',
+      ComplaintStatusId: c.ComplaintStatusId ?? item.complaintStatusId ?? 0,
+      ComplaintChannelId: c.ComplaintChannelId ?? item.complaintChannelId ?? 0,
+      Channel: c.Channel ?? item.channel ?? '',
+      ComplaintCategoryId: c.ComplaintCategoryId ?? item.complaintCategoryId ?? 0,
+      Category: c.Category ?? item.category ?? '',
+      SubCategoryId: c.SubCategoryId ?? item.subCategoryId,
+      ClientId: c.ClientId ?? item.clientId,
+      ClientName: c.ClientName ?? item.clientName,
+      ClientEmail: c.ClientEmail ?? item.clientEmail,
+      ClientMobile: c.ClientMobile ?? item.clientMobile,
+      AssignedToUserId: c.AssignedToUserId ?? item.assignedToUserId,
+      AssignedToName: c.AssignedToName ?? item.assignedToName,
+      AssignedDate: c.AssignedDate ?? item.assignedDate,
+      DueDate: c.DueDate ?? item.dueDate,
+      SlaStatus: c.SlaStatus ?? item.slaStatus ?? '',
+      IsSlaBreached: c.IsSlaBreached ?? item.isSlaBreached ?? false,
+      IsResolved: c.IsResolved ?? item.isResolved ?? false,
+      ResolvedDate: c.ResolvedDate ?? item.resolvedDate,
+      ResolutionNotes: c.ResolutionNotes ?? item.resolutionNotes,
+      IsClosed: c.IsClosed ?? item.isClosed ?? false,
+      ClosedDate: c.ClosedDate ?? item.closedDate,
+      CreatedDateTime: c.CreatedDateTime ?? item.createdDateTime ?? '',
+      CreatedBy: c.CreatedBy ?? item.createdBy ?? 0,
+      CreatedByName: c.CreatedByName ?? item.createdByName ?? '',
+      UpdatedDateTime: c.UpdatedDateTime ?? item.updatedDateTime,
+      IsActive: c.IsActive ?? item.isActive ?? true
+    };
+  }
+
+  private normalizeHistory(h: ComplaintHistory): ComplaintHistory {
+    const item = h as ComplaintHistory & {
+      id?: number;
+      action?: string;
+      oldStatus?: string;
+      newStatus?: string;
+      note?: string;
+      performedByName?: string;
+      createdDateTime?: string;
+    };
+
+    return {
+      Id: h.Id ?? item.id ?? 0,
+      Action: h.Action ?? item.action ?? 'Updated',
+      OldStatus: h.OldStatus ?? item.oldStatus,
+      NewStatus: h.NewStatus ?? item.newStatus,
+      Note: h.Note ?? item.note,
+      PerformedByName: h.PerformedByName ?? item.performedByName ?? 'System',
+      CreatedDateTime: h.CreatedDateTime ?? item.createdDateTime ?? new Date().toISOString()
+    };
+  }
+
+  goToGrid(): void {
+    if (this.auth.hasRole('Client')) {
+      this.router.navigate(['/my-complaints']);
+      return;
+    }
+    this.router.navigate(['/complaints']);
+  }
+
+  statusBadgeClass(status: string): string {
+    const key = (status ?? '').toLowerCase().replace(/\s+/g, '');
+    return {
+      new: 'badge-status-new',
+      assigned: 'badge-status-assigned',
+      inprogress: 'badge-status-inprogress',
+      escalated: 'badge-status-escalated',
+      resolved: 'badge-status-resolved',
+      closed: 'badge-status-closed'
+    }[key] ?? 'bg-secondary';
+  }
+
+  slaStatusText(): string {
+    const timer = this.slaTimer();
+    if (!timer) return 'Not available';
+    if (timer.remainingText) return timer.remainingText;
+    if (typeof timer.remainingMinutes === 'number') return `${timer.remainingMinutes} min remaining`;
+    if (timer.status) return timer.status;
+    return 'Not available';
+  }
+
+  private normalizeSla(value: ComplaintSlaTimer): ComplaintSlaTimer {
+    const item = value as ComplaintSlaTimer & {
+      ComplaintId?: number;
+      ComplaintNumber?: string;
+      DueDateUtc?: string;
+      RemainingMinutes?: number;
+      RemainingText?: string;
+      ElapsedMinutes?: number;
+      IsBreached?: boolean;
+      Status?: string;
+    };
+
+    return {
+      complaintId: value.complaintId ?? item.ComplaintId,
+      complaintNumber: value.complaintNumber ?? item.ComplaintNumber,
+      dueDateUtc: value.dueDateUtc ?? item.DueDateUtc,
+      remainingMinutes: value.remainingMinutes ?? item.RemainingMinutes,
+      remainingText: value.remainingText ?? item.RemainingText,
+      elapsedMinutes: value.elapsedMinutes ?? item.ElapsedMinutes,
+      isBreached: value.isBreached ?? item.IsBreached,
+      status: value.status ?? item.Status
+    };
+  }
+}

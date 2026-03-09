@@ -1,0 +1,26 @@
+.kpi-card {
+  border-color: var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.kpi-title {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}

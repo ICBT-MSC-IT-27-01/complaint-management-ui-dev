@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { showValidationAlert, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-forgot-password',
@@ -295,8 +296,11 @@ export class ForgotPasswordComponent {
   errorMsg = '';
 
   submit(): void {
+    trimFormValues(this.form, ['email']);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showValidationAlert(this.form, {
+        email: { label: 'Registered Email Address', type: 'email' }
+      });
       return;
     }
 

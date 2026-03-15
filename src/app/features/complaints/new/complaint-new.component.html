@@ -9,7 +9,7 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Client ID (Optional)</label>
-              <input class="form-control" type="number" formControlName="clientId" />
+              <input class="form-control" type="number" min="0" formControlName="clientId" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Client Name (Optional)</label>
@@ -23,7 +23,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Client Mobile (Optional)</label>
-              <input class="form-control" formControlName="clientMobile" />
+              <input class="form-control" inputmode="numeric" formControlName="clientMobile" />
             </div>
           </div>
           <div>
@@ -46,13 +46,13 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Complaint Category ID</label>
-              <input class="form-control" type="number" formControlName="complaintCategoryId" />
+              <input class="form-control" type="number" min="0" formControlName="complaintCategoryId" />
             </div>
           </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Sub Category ID (Optional)</label>
-              <input class="form-control" type="number" formControlName="subCategoryId" />
+              <input class="form-control" type="number" min="0" formControlName="subCategoryId" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Priority</label>

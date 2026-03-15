@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { UserService } from '@core/services/user.service';
 import { CreateUserRequest, UpdateUserRequest } from '@core/models/user.model';
+import { contactNumberValidator, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-user-form',
@@ -23,7 +24,7 @@ import { CreateUserRequest, UpdateUserRequest } from '@core/models/user.model';
             <div class="col-12"><label class="form-label fw-medium">Full Name <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="name"><div class="form-error" *ngIf="f['name'].touched && f['name'].invalid">Required.</div></div>
             <div class="col-md-6"><label class="form-label fw-medium">Email <span class="text-danger">*</span></label><input type="email" class="form-control" formControlName="email"><div class="form-error" *ngIf="f['email'].touched && f['email'].invalid">Valid email required.</div></div>
             <div class="col-md-6"><label class="form-label fw-medium">Username <span class="text-danger">*</span></label><input type="text" class="form-control" formControlName="username"><div class="form-error" *ngIf="f['username'].touched && f['username'].invalid">Required.</div></div>
-            <div class="col-md-6"><label class="form-label fw-medium">Phone</label><input type="text" class="form-control" formControlName="phoneNumber"></div>
+            <div class="col-md-6"><label class="form-label fw-medium">Phone</label><input type="text" inputmode="numeric" class="form-control" formControlName="phoneNumber"></div>
             <div class="col-md-6"><label class="form-label fw-medium">Role <span class="text-danger">*</span></label><select class="form-select" formControlName="role"><option>Call Center Agent</option><option>Technical Engineer</option><option>Billing Officer</option><option>Supervisor</option><option>Manager</option><option>System Administrator</option><option>Client</option></select></div>
             <div class="col-12">
               <div class="form-check form-switch">
@@ -55,10 +56,10 @@ export class UserFormComponent implements OnInit {
   loading = false;
   errorMsg = '';
   form = this.fb.group({
-    name: ['', Validators.required],
+    name: ['', [Validators.required, textFieldValidator(true)]],
     email: ['', [Validators.required, Validators.email]],
-    username: ['', Validators.required],
-    phoneNumber: [''],
+    username: ['', [Validators.required, textFieldValidator(true)]],
+    phoneNumber: ['', contactNumberValidator()],
     role: ['Call Center Agent', Validators.required],
     isActive: [true],
     password: ['', [Validators.required, Validators.minLength(8)]]
@@ -132,7 +133,17 @@ export class UserFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    trimFormValues(this.form, ['name', 'email', 'username', 'phoneNumber', 'password']);
+    if (this.form.invalid) {
+      showValidationAlert(this.form, {
+        name: { label: 'Full Name', type: 'text' },
+        email: { label: 'Email', type: 'email' },
+        username: { label: 'Username', type: 'text' },
+        phoneNumber: { label: 'Phone', type: 'contact' },
+        password: { label: 'Password', type: 'password' }
+      });
+      return;
+    }
     this.loading = true;
 
     if (this.isEditMode && this.userId != null) {

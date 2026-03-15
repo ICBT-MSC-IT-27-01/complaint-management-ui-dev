@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { AuthService } from '@core/services/auth.service';
 import { LoginRequest, ClientRegisterRequest } from '@core/models/auth.model';
+import { contactNumberValidator, showErrorAlert, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,7 @@ export class LoginComponent {
   private router = inject(Router);
 
   staffForm = this.fb.group({
-    emailOrUsername: ['', Validators.required],
+    emailOrUsername: ['', [Validators.required, textFieldValidator(true)]],
     password: ['', Validators.required]
   });
 
@@ -33,8 +34,8 @@ export class LoginComponent {
 
   clientRegisterForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    phoneNumber: [''],
+    name: ['', [Validators.required, Validators.minLength(2), textFieldValidator(true)]],
+    phoneNumber: ['', contactNumberValidator()],
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', Validators.required]
   });
@@ -61,7 +62,14 @@ export class LoginComponent {
   }
 
   submitStaffLogin(): void {
-    if (this.staffForm.invalid) { this.staffForm.markAllAsTouched(); return; }
+    trimFormValues(this.staffForm, ['emailOrUsername', 'password']);
+    if (this.staffForm.invalid) {
+      showValidationAlert(this.staffForm, {
+        emailOrUsername: { label: 'Email or Username', type: 'text' },
+        password: { label: 'Password', type: 'password' }
+      });
+      return;
+    }
     this.loading = true;
     this.errorMsg = '';
     this.successMsg = '';
@@ -85,7 +93,13 @@ export class LoginComponent {
   }
 
   submitClientEmail(): void {
-    if (this.clientEmailForm.invalid) { this.clientEmailForm.markAllAsTouched(); return; }
+    trimFormValues(this.clientEmailForm, ['email']);
+    if (this.clientEmailForm.invalid) {
+      showValidationAlert(this.clientEmailForm, {
+        email: { label: 'Email', type: 'email' }
+      });
+      return;
+    }
 
     const email = (this.clientEmailForm.value.email ?? '').trim();
     this.loading = true;
@@ -112,7 +126,14 @@ export class LoginComponent {
   }
 
   submitClientLogin(): void {
-    if (this.clientLoginForm.invalid) { this.clientLoginForm.markAllAsTouched(); return; }
+    trimFormValues(this.clientLoginForm, ['email', 'password']);
+    if (this.clientLoginForm.invalid) {
+      showValidationAlert(this.clientLoginForm, {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      });
+      return;
+    }
     this.loading = true;
     this.errorMsg = '';
     this.successMsg = '';
@@ -136,13 +157,24 @@ export class LoginComponent {
   }
 
   submitClientRegister(): void {
-    if (this.clientRegisterForm.invalid) { this.clientRegisterForm.markAllAsTouched(); return; }
+    trimFormValues(this.clientRegisterForm, ['email', 'name', 'phoneNumber', 'password', 'confirmPassword']);
+    if (this.clientRegisterForm.invalid) {
+      showValidationAlert(this.clientRegisterForm, {
+        email: { label: 'Email', type: 'email' },
+        name: { label: 'Name', type: 'text' },
+        phoneNumber: { label: 'Phone Number', type: 'contact' },
+        password: { label: 'Password', type: 'password' },
+        confirmPassword: { label: 'Confirm Password', type: 'password' }
+      });
+      return;
+    }
 
     const password = this.clientRegisterForm.value.password ?? '';
     const confirmPassword = this.clientRegisterForm.value.confirmPassword ?? '';
 
     if (password !== confirmPassword) {
       this.errorMsg = 'Passwords do not match.';
+      showErrorAlert(this.errorMsg);
       return;
     }
 

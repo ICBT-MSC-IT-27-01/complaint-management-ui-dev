@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CreateComplaintRequest } from '@core/models/complaint.model';
 import { ComplaintService } from '@core/services/complaint.service';
+import { contactNumberValidator, nonNegativeNumberValidator, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-complaint-new',
@@ -18,21 +19,31 @@ export class ComplaintNewComponent {
   private readonly router = inject(Router);
 
   readonly form = this.fb.group({
-    clientId: [null as number | null],
-    clientName: [''],
-    clientEmail: [''],
-    clientMobile: [''],
+    clientId: [null as number | null, nonNegativeNumberValidator()],
+    clientName: ['', textFieldValidator()],
+    clientEmail: ['', Validators.email],
+    clientMobile: ['', contactNumberValidator()],
     complaintChannelId: [2, Validators.required],
-    complaintCategoryId: [1, Validators.required],
-    subCategoryId: [null as number | null],
-    subject: ['', Validators.required],
-    description: ['', Validators.required],
+    complaintCategoryId: [1, [Validators.required, nonNegativeNumberValidator()]],
+    subCategoryId: [null as number | null, nonNegativeNumberValidator()],
+    subject: ['', [Validators.required, textFieldValidator(true)]],
+    description: ['', [Validators.required, textFieldValidator(true)]],
     priority: ['Medium', Validators.required]
   });
 
   submit(): void {
+    trimFormValues(this.form, ['clientName', 'clientEmail', 'clientMobile', 'subject', 'description']);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showValidationAlert(this.form, {
+        clientId: { label: 'Client ID', type: 'number' },
+        clientName: { label: 'Client Name', type: 'text' },
+        clientEmail: { label: 'Client Email', type: 'email' },
+        clientMobile: { label: 'Client Mobile', type: 'contact' },
+        complaintCategoryId: { label: 'Complaint Category ID', type: 'number' },
+        subCategoryId: { label: 'Sub Category ID', type: 'number' },
+        subject: { label: 'Subject', type: 'text' },
+        description: { label: 'Description', type: 'text' }
+      });
       return;
     }
 

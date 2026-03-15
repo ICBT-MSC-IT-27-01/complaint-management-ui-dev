@@ -8,6 +8,7 @@ import { CategoryService } from '@core/services/category.service';
 import { AuthService } from '@core/services/auth.service';
 import { Category } from '@core/models/category.model';
 import { Client } from '@core/models/client.model';
+import { contactNumberValidator, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 interface CategoryOption {
   id: number;
@@ -130,13 +131,13 @@ export class ComplaintFormComponent implements OnInit {
 
   form = this.fb.group({
     clientId: [null as number | null],
-    clientName: [''],
-    clientEmail: [''],
-    clientMobile: [''],
+    clientName: ['', textFieldValidator()],
+    clientEmail: ['', Validators.email],
+    clientMobile: ['', contactNumberValidator()],
     complaintChannelId: [1, Validators.required],
     complaintCategoryId: ['', Validators.required],
-    subject: ['', [Validators.required, Validators.maxLength(300)]],
-    description: ['', Validators.required],
+    subject: ['', [Validators.required, Validators.maxLength(300), textFieldValidator(true)]],
+    description: ['', [Validators.required, textFieldValidator(true)]],
     priority: ['Medium', Validators.required]
   });
 
@@ -164,8 +165,16 @@ export class ComplaintFormComponent implements OnInit {
   }
 
   onSubmit(): void {
+    trimFormValues(this.form, ['clientName', 'clientEmail', 'clientMobile', 'subject', 'description']);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showValidationAlert(this.form, {
+        clientName: { label: 'Client Name', type: 'text' },
+        clientEmail: { label: 'Client Email', type: 'email' },
+        clientMobile: { label: 'Client Mobile', type: 'contact' },
+        complaintCategoryId: { label: 'Category', type: 'number' },
+        subject: { label: 'Subject', type: 'text' },
+        description: { label: 'Description', type: 'text' }
+      });
       return;
     }
     this.loading.set(true);

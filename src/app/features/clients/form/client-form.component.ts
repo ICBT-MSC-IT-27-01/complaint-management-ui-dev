@@ -6,6 +6,7 @@ import { ClientService } from '@core/services/client.service';
 import { UserService } from '@core/services/user.service';
 import { User } from '@core/models/user.model';
 import { CreateClientRequest } from '@core/models/client.model';
+import { contactNumberValidator, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-client-form',
@@ -34,7 +35,7 @@ import { CreateClientRequest } from '@core/models/client.model';
             </div>
             <div class="col-md-6">
               <label class="form-label fw-medium">Phone</label>
-              <input type="text" class="form-control" formControlName="primaryPhone">
+              <input type="text" inputmode="numeric" class="form-control" formControlName="primaryPhone">
             </div>
             <div class="col-md-6">
               <label class="form-label fw-medium">Client Type <span class="text-danger">*</span></label>
@@ -82,10 +83,10 @@ export class ClientFormComponent implements OnInit {
   errorMsg = '';
 
   form = this.fb.group({
-    companyName: ['', Validators.required],
+    companyName: ['', [Validators.required, textFieldValidator(true)]],
     primaryEmail: ['', [Validators.required, Validators.email]],
-    primaryPhone: [''],
-    address: [''],
+    primaryPhone: ['', contactNumberValidator()],
+    address: ['', textFieldValidator()],
     clientType: ['Standard', Validators.required],
     accountManagerId: [null as number | null]
   });
@@ -130,7 +131,16 @@ export class ClientFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    trimFormValues(this.form, ['companyName', 'primaryEmail', 'primaryPhone', 'address']);
+    if (this.form.invalid) {
+      showValidationAlert(this.form, {
+        companyName: { label: 'Company Name', type: 'text' },
+        primaryEmail: { label: 'Email', type: 'email' },
+        primaryPhone: { label: 'Phone', type: 'contact' },
+        address: { label: 'Address', type: 'text' }
+      });
+      return;
+    }
     this.loading.set(true);
 
     const payload: CreateClientRequest = {

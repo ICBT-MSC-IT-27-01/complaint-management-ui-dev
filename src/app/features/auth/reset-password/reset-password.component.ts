@@ -3,6 +3,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
+import { showErrorAlert, showValidationAlert, textFieldValidator, trimFormValues } from '@core/utils/form-validation.util';
 
 @Component({
   selector: 'app-reset-password',
@@ -89,7 +90,7 @@ export class ResetPasswordComponent {
       this.route.snapshot.queryParamMap.get('resetToken')
       ?? this.route.snapshot.queryParamMap.get('token')
       ?? '',
-      Validators.required
+      [Validators.required, textFieldValidator(true)]
     ],
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', Validators.required]
@@ -100,8 +101,14 @@ export class ResetPasswordComponent {
   errorMsg = '';
 
   submit(): void {
+    trimFormValues(this.form, ['email', 'resetToken', 'newPassword', 'confirmPassword']);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      showValidationAlert(this.form, {
+        email: { label: 'Email', type: 'email' },
+        resetToken: { label: 'Reset Token', type: 'text' },
+        newPassword: { label: 'New Password', type: 'password' },
+        confirmPassword: { label: 'Confirm Password', type: 'password' }
+      });
       return;
     }
 
@@ -111,6 +118,7 @@ export class ResetPasswordComponent {
     if (newPassword !== confirmPassword) {
       this.errorMsg = 'New password and confirmation do not match.';
       this.successMsg = '';
+      showErrorAlert(this.errorMsg);
       return;
     }
 
